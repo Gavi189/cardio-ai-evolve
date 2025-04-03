@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { 
   Check, ChevronDown, Clock, FileEdit, Plus, Save, Sparkles, Stethoscope 
@@ -6,9 +5,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
 
-// Componente simplificado para o editor
 const MedicalRecordEditor = ({ content, onContentChange, autofilled }: { 
   content: string, 
   onContentChange: (val: string) => void,
@@ -32,7 +30,6 @@ const MedicalRecordEditor = ({ content, onContentChange, autofilled }: {
   );
 };
 
-// Componente para o histórico de evolução
 const EvolutionHistory = () => {
   const records = [
     {
@@ -100,11 +97,10 @@ export default function MedicalRecord() {
   };
 
   const handleAutocomplete = () => {
-    // Simulando preenchimento automático por IA
     setTimeout(() => {
       const suggestedText = 
         "Paciente Maria Silva, 64 anos, comparece para consulta de retorno. \n\n" +
-        "ANAMNESE: Refere melhora da dispneia aos esforços após ajuste da medicação. Nega dor torácica. Mantém episódios de palpitações esporádicas, principalmente após situações de ansiedade. PA bem controlada em casa (média 130/80mmHg). Sono regular, sem ortopneia.\n\n" +
+        "ANAMNESE: Refere melhora da dispneia aos esforços após ajuste da medicação. Nega dor torácica. Mantém episódios de palpitações esporádicas, principalmente após situações de ansiedade. PA bem controlada em casa (média 130/85mmHg). Sono regular, sem ortopneia.\n\n" +
         "MEDICAÇÕES EM USO: Losartana 50mg 2x/dia, Atenolol 25mg 1x/dia, AAS 100mg 1x/dia.\n\n" +
         "EXAME FÍSICO: PA: 135/85 mmHg | FC: 72bpm | SpO2: 97% | Peso: 68kg\n" +
         "Aparelho Cardiovascular: Bulhas rítmicas, normofonéticas, sem sopros.\n" +
@@ -129,7 +125,6 @@ export default function MedicalRecord() {
     }, 1500);
   };
 
-  // Dados simulados do paciente
   const patient = {
     id: 1,
     name: "Maria Silva",
