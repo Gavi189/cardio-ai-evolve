@@ -21,7 +21,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
 
 export default function RiskCalculator() {
   const { toast } = useToast();
@@ -367,7 +367,7 @@ export default function RiskCalculator() {
                             <p className="text-sm">
                               <strong>0 pontos:</strong> ≤ limite normal<br />
                               <strong>1 ponto:</strong> 1-3x limite normal<br />
-                              <strong>2 pontos:</strong> >3x limite normal
+                              <strong>2 pontos:</strong> &gt;3x limite normal
                             </p>
                           </HoverCardContent>
                         </HoverCard>
@@ -383,7 +383,7 @@ export default function RiskCalculator() {
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="2" id="t2" />
-                          <Label htmlFor="t2">>3x limite normal (2 pts)</Label>
+                          <Label htmlFor="t2">&gt;3x limite normal (2 pts)</Label>
                         </div>
                       </RadioGroup>
                     </div>
@@ -525,7 +525,7 @@ export default function RiskCalculator() {
                       <RadioGroup value={ageCha || ""} onValueChange={setAgeCha}>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="<65" id="age1" />
-                          <Label htmlFor="age1">< 65 anos (0 pts)</Label>
+                          <Label htmlFor="age1">&lt; 65 anos (0 pts)</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="65-74" id="age2" />
