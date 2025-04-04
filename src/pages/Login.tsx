@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,9 +75,11 @@ export default function Login() {
           </div>
           
           <div className="text-right">
-            <Button variant="link" size="sm" className="text-cardio-700">
-              Esqueci minha senha
-            </Button>
+            <Link to="/recover-password">
+              <Button variant="link" size="sm" className="text-cardio-700">
+                Esqueci minha senha
+              </Button>
+            </Link>
           </div>
           
           <Button 
@@ -87,11 +89,20 @@ export default function Login() {
           >
             {isLoading ? "Entrando..." : "Entrar"}
           </Button>
+          
+          <div className="text-center mt-4">
+            <span className="text-muted-foreground">Não tem uma conta?</span>{" "}
+            <Link to="/register">
+              <Button variant="link" className="text-cardio-700 p-0">
+                Registre-se
+              </Button>
+            </Link>
+          </div>
+          
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            <p>Demo: demo@smartcardio.com / 123456</p>
+          </div>
         </form>
-        
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Demo: demo@smartcardio.com / 123456</p>
-        </div>
       </div>
     </div>
   );
