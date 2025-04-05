@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   FileEdit, Filter, Heart, Plus, Search, UserRound 
 } from "lucide-react";
@@ -34,6 +34,7 @@ type Patient = {
 
 export default function PatientsList() {
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
   
   const patients: Patient[] = [
     { 
@@ -115,7 +116,10 @@ export default function PatientsList() {
           <p className="text-muted-foreground">Gerenciamento de pacientes e histórico clínico</p>
         </div>
         
-        <Button className="bg-cardio-600 hover:bg-cardio-700">
+        <Button 
+          className="bg-cardio-600 hover:bg-cardio-700"
+          onClick={() => navigate("/patient-register")}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Novo Paciente
         </Button>

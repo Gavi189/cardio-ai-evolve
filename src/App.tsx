@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import RecoverPassword from "./pages/RecoverPassword";
 import Dashboard from "./pages/Dashboard";
 import PatientsList from "./pages/PatientsList";
+import PatientRegister from "./pages/PatientRegister";
 import MedicalRecord from "./pages/MedicalRecord";
 import RiskCalculator from "./pages/RiskCalculator";
 import Schedule from "./pages/Schedule";
@@ -35,6 +36,7 @@ const App = () => (
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/patients" element={<PatientsList />} />
+            <Route path="/patient-register" element={<PatientRegister />} />
             <Route path="/medical-record" element={<MedicalRecord />} />
             <Route path="/risk-calculator" element={<RiskCalculator />} />
             <Route path="/schedule" element={<Schedule />} />
