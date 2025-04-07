@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { 
   Cog, User, Bell, Lock, Palette, Monitor, Moon, Sun, Laptop, 
-  CheckCircle, Save, ChevronRight, LogOut
+  CheckCircle, Save, ChevronRight, LogOut, Link, FlaskConical,
+  Store, Calendar, Code, ExternalLink, BadgeCheck, AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,19 +19,50 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+
+interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  status: "connected" | "disconnected";
+  buttonText: string;
+  actionType: "connect" | "configure" | "documentation";
+}
 
 export default function Settings() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
   
-  // Configurações de exemplo
   const [theme, setTheme] = useState("system");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [language, setLanguage] = useState("pt-BR");
-  
-  // Dados de perfil de exemplo
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+
   const [profile, setProfile] = useState({
     name: "Dr. Rafael Costa",
     email: "dr.rafael@smartcardio.com",
@@ -39,6 +70,63 @@ export default function Settings() {
     license: "CRM 12345",
     phone: "(11) 98765-4321"
   });
+
+  const integrations: Integration[] = [
+    {
+      id: "lab",
+      name: "Laboratórios de Análises",
+      description: "Integração com laboratórios para recebimento automático de resultados",
+      icon: <FlaskConical />,
+      status: "connected",
+      buttonText: "Configurar",
+      actionType: "configure"
+    },
+    {
+      id: "pharmacy",
+      name: "Farmácias",
+      description: "Integração com farmácias para envio automático de receitas",
+      icon: <Store />,
+      status: "disconnected",
+      buttonText: "Conectar",
+      actionType: "connect"
+    },
+    {
+      id: "gcalendar",
+      name: "Google Calendar",
+      description: "Sincronize sua agenda médica com o Google Calendar",
+      icon: <Calendar />,
+      status: "disconnected",
+      buttonText: "Conectar",
+      actionType: "connect"
+    },
+    {
+      id: "api",
+      name: "API para Desenvolvedores",
+      description: "Acesse nossa API para integrar com seu próprio software",
+      icon: <Code />,
+      status: "disconnected",
+      buttonText: "Ver documentação",
+      actionType: "documentation"
+    },
+    {
+      id: "ecg",
+      name: "Dispositivos de ECG",
+      description: "Conecte com aparelhos de ECG para importação direta de exames",
+      icon: <ExternalLink />,
+      status: "disconnected",
+      buttonText: "Conectar",
+      actionType: "connect"
+    },
+    {
+      id: "portal",
+      name: "Portal do Paciente",
+      description: "Permita que pacientes acessem resultados e agendamentos",
+      icon: <User />,
+      status: "disconnected",
+      buttonText: "Configurar",
+      actionType: "configure"
+    }
+  ];
 
   const saveSettings = () => {
     toast({
@@ -60,6 +148,35 @@ export default function Settings() {
       description: "Você será redirecionado para a tela de login.",
     });
     // Redirecionar para a tela de login em uma aplicação real
+  };
+
+  const handleIntegrationAction = (integration: Integration) => {
+    setSelectedIntegration(integration);
+    
+    if (integration.actionType === "configure") {
+      setConfigDialogOpen(true);
+    } else if (integration.actionType === "connect") {
+      toast({
+        title: `Conectando com ${integration.name}`,
+        description: "Iniciando processo de integração...",
+      });
+    } else if (integration.actionType === "documentation") {
+      toast({
+        title: "Documentação da API",
+        description: "A documentação seria aberta em uma nova janela.",
+      });
+    }
+  };
+
+  const handleConnectIntegration = () => {
+    if (!selectedIntegration) return;
+    
+    toast({
+      title: "Integração conectada",
+      description: `A integração com ${selectedIntegration.name} foi configurada com sucesso.`,
+    });
+    
+    setConfigDialogOpen(false);
   };
 
   return (
@@ -100,6 +217,14 @@ export default function Settings() {
                 >
                   <Palette className="mr-2 h-4 w-4" />
                   Aparência
+                </Button>
+                <Button
+                  variant={activeTab === "integrations" ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab("integrations")}
+                >
+                  <Link className="mr-2 h-4 w-4" />
+                  Integrações
                 </Button>
                 <Button
                   variant={activeTab === "security" ? "secondary" : "ghost"}
@@ -351,6 +476,65 @@ export default function Settings() {
               </div>
             )}
             
+            {activeTab === "integrations" && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold">Integrações</h2>
+                  <p className="text-muted-foreground">Conecte o sistema a outros serviços e aplicativos</p>
+                </div>
+                
+                <div className="space-y-4">
+                  {integrations.map((integration) => (
+                    <Card key={integration.id} className="overflow-hidden border">
+                      <div className="p-6 flex items-center justify-between">
+                        <div className="flex items-start gap-4">
+                          <div className="rounded-md bg-muted p-2 w-10 h-10 flex items-center justify-center text-cardio-600">
+                            {integration.icon}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium">{integration.name}</h3>
+                              {integration.status === "connected" ? (
+                                <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200 flex items-center gap-1">
+                                  <BadgeCheck className="h-3 w-3" /> Conectado
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-gray-50 text-gray-700 hover:bg-gray-50 border-gray-200 flex items-center gap-1">
+                                  <AlertCircle className="h-3 w-3" /> Não conectado
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{integration.description}</p>
+                          </div>
+                        </div>
+                        <Button 
+                          onClick={() => handleIntegrationAction(integration)}
+                          variant={integration.status === "connected" ? "outline" : "default"}
+                        >
+                          {integration.buttonText}
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                <div className="mt-8 border rounded-lg p-4 bg-muted/10">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium">Configurações avançadas de integração</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Configure webhooks, adicione chaves de API personalizadas e gerencie permissões.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      Configurações avançadas
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {activeTab === "security" && (
               <div className="space-y-6">
                 <div>
@@ -440,6 +624,149 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>Configurar {selectedIntegration?.name}</DialogTitle>
+            <DialogDescription>
+              Configure os parâmetros de integração para {selectedIntegration?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {selectedIntegration?.id === "lab" && (
+              <>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="lab-name" className="text-right">
+                    Laboratório
+                  </Label>
+                  <Select defaultValue="dasa">
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Selecione um laboratório" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dasa">Dasa</SelectItem>
+                      <SelectItem value="fleury">Fleury</SelectItem>
+                      <SelectItem value="db">DB Diagnósticos</SelectItem>
+                      <SelectItem value="custom">Personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="api-key" className="text-right">
+                    Chave API
+                  </Label>
+                  <Input
+                    id="api-key"
+                    type="password"
+                    className="col-span-3"
+                    defaultValue="••••••••••••••••"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="receive-method" className="text-right">
+                    Recebimento
+                  </Label>
+                  <Select defaultValue="push">
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Método de recebimento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="push">Notificação Push</SelectItem>
+                      <SelectItem value="email">E-mail</SelectItem>
+                      <SelectItem value="pull">Consulta Periódica</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right">
+                    Notificações
+                  </Label>
+                  <div className="flex items-center space-x-2 col-span-3">
+                    <Switch id="auto-notify" defaultChecked />
+                    <Label htmlFor="auto-notify" className="font-normal">Notificar automaticamente novos resultados</Label>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {selectedIntegration?.id === "portal" && (
+              <>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="portal-url" className="text-right">
+                    URL do Portal
+                  </Label>
+                  <Input
+                    id="portal-url"
+                    className="col-span-3"
+                    defaultValue="https://pacientes.smartcardio.com.br"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right">Status</Label>
+                  <div className="col-span-3">
+                    <Select defaultValue="disabled">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Status do portal" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="enabled">Ativado</SelectItem>
+                        <SelectItem value="disabled">Desativado</SelectItem>
+                        <SelectItem value="maintenance">Manutenção</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right pt-2">Permissões</Label>
+                  <div className="space-y-2 col-span-3">
+                    <div className="flex items-center space-x-2">
+                      <Switch id="view-results" defaultChecked />
+                      <Label htmlFor="view-results" className="font-normal">Ver resultados de exames</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch id="schedule" defaultChecked />
+                      <Label htmlFor="schedule" className="font-normal">Agendar consultas</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch id="cancel" defaultChecked />
+                      <Label htmlFor="cancel" className="font-normal">Cancelar consultas</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch id="chat" />
+                      <Label htmlFor="chat" className="font-normal">Chat com a equipe médica</Label>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfigDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConnectIntegration}>
+              Salvar configurações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conectar a {selectedIntegration?.name}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você será redirecionado para autorizar a conexão com {selectedIntegration?.name}.
+              Esse processo requer que você forneça credenciais de acesso.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction>Continuar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
