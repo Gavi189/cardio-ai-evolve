@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { FileText, Search, Filter, Download, Share2, Plus, Printer, FilePlus, FileCheck, MedicalSymbol } from "lucide-react";
+import { FileText, Search, Filter, Download, Share2, Plus, Printer, FilePlus, FileCheck, Stethoscope } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +68,6 @@ export default function Prescription() {
     }
   });
   
-  // Dados de exemplo para receituários
   const prescriptions: Prescription[] = [
     { id: 1, patient: "Maria Silva", date: "04/04/2023", type: "simples", description: "Losartana 50mg - 30 comprimidos", status: "delivered" },
     { id: 2, patient: "João Santos", date: "03/04/2023", type: "simples", description: "Atorvastatina 20mg - 30 comprimidos", status: "pending" },
@@ -79,12 +77,11 @@ export default function Prescription() {
     { id: 6, patient: "Paulo Sousa", date: "25/03/2023", type: "exame", description: "Solicitação de teste ergométrico", status: "pending" },
   ];
 
-  // Templates atualizados conforme solicitado
   const prescriptionTemplates: PrescriptionTemplate[] = [
     { id: 1, title: "Dislipidemia leve", description: "Medicamentos e orientações para dislipidemia leve", type: "simples", icon: FileText },
     { id: 2, title: "Pré-operatório cardiovascular", description: "Exames e medicações para preparo pré-operatório", type: "exame", icon: FileCheck },
     { id: 3, title: "Insuficiência cardíaca crônica", description: "Tratamento padrão para ICC", type: "simples", icon: FileText },
-    { id: 4, title: "Ansiedade leve/moderada", description: "Tratamento para ansiedade com medicação controlada", type: "especial", icon: MedicalSymbol },
+    { id: 4, title: "Ansiedade leve/moderada", description: "Tratamento para ansiedade com medicação controlada", type: "especial", icon: Stethoscope },
     { id: 5, title: "Exames cardiológicos básicos", description: "Conjunto de exames cardiológicos de rotina", type: "exame", icon: FileCheck },
   ];
 
@@ -128,7 +125,7 @@ export default function Prescription() {
   const getTypeIcon = (type: Prescription["type"]) => {
     switch (type) {
       case "simples": return <FileText className="h-5 w-5" />;
-      case "especial": return <MedicalSymbol className="h-5 w-5" />;
+      case "especial": return <Stethoscope className="h-5 w-5" />;
       case "exame": return <FileCheck className="h-5 w-5" />;
       default: return <FileText className="h-5 w-5" />;
     }
