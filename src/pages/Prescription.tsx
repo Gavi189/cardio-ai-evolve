@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { FileText, Search, Filter, Download, Share2, Plus, Printer, FilePlus, FileCheck, Stethoscope, FileBarChart2, FileOutput, FileBadge } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -705,6 +706,11 @@ export default function Prescription() {
                   </Form>
                 </DialogContent>
               </Dialog>
+            </div>
+          ) : (
+            <Card className="p-8 text-center">
+              <FileText className="h-12 w-12 mx-auto mb-3 text-muted" />
+              <p className="text-muted-foreground">Nenhum template de prescrição encontrado</p>
             </Card>
           )}
         </TabsContent>
