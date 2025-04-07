@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, Search, Filter, Download, Share2, Plus, Printer, FilePlus, FileCheck, Stethoscope } from "lucide-react";
+import { FileText, Search, Filter, Download, Share2, Plus, Printer, FilePlus, FileCheck, Stethoscope, FileBarChart2, FileOutput, FileBadge } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,15 +21,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormDescription } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
+import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Prescription {
   id: number;
   patient: string;
   date: string;
-  type: "simples" | "especial" | "exame";
+  type: "simples" | "especial" | "exame" | "atestado" | "relatorio" | "encaminhamento" | "orientacoes" | "declaracao";
   description: string;
   status: "pending" | "delivered" | "expired";
 }
@@ -38,7 +40,7 @@ interface PrescriptionTemplate {
   id: number;
   title: string;
   description: string;
-  type: "simples" | "especial" | "exame";
+  type: "simples" | "especial" | "exame" | "atestado" | "relatorio" | "encaminhamento" | "orientacoes" | "declaracao";
   icon: React.FC<any>;
 }
 
@@ -55,7 +57,12 @@ export default function Prescription() {
       title: "",
       description: "",
       type: "simples",
-      content: ""
+      content: "",
+      documentType: "receita",
+      doctorInfo: true,
+      signature: true,
+      dateCity: true,
+      header: ""
     }
   });
 
@@ -64,7 +71,8 @@ export default function Prescription() {
       patient: "",
       type: "simples",
       description: "",
-      content: ""
+      content: "",
+      documentType: "receita"
     }
   });
   
@@ -76,13 +84,17 @@ export default function Prescription() {
     { id: 5, patient: "Carla Mendes", date: "28/03/2023", type: "simples", description: "Varfarina 5mg - 30 comprimidos", status: "expired" },
     { id: 6, patient: "Paulo Sousa", date: "25/03/2023", type: "exame", description: "Solicitação de teste ergométrico", status: "pending" },
   ];
-
+  
   const prescriptionTemplates: PrescriptionTemplate[] = [
     { id: 1, title: "Dislipidemia leve", description: "Medicamentos e orientações para dislipidemia leve", type: "simples", icon: FileText },
     { id: 2, title: "Pré-operatório cardiovascular", description: "Exames e medicações para preparo pré-operatório", type: "exame", icon: FileCheck },
     { id: 3, title: "Insuficiência cardíaca crônica", description: "Tratamento padrão para ICC", type: "simples", icon: FileText },
     { id: 4, title: "Ansiedade leve/moderada", description: "Tratamento para ansiedade com medicação controlada", type: "especial", icon: Stethoscope },
     { id: 5, title: "Exames cardiológicos básicos", description: "Conjunto de exames cardiológicos de rotina", type: "exame", icon: FileCheck },
+    { id: 6, title: "Atestado médico padrão", description: "Modelo de atestado com 3 dias de afastamento", type: "atestado", icon: FileBadge },
+    { id: 7, title: "Relatório para perícia", description: "Relatório detalhado para perícia médica", type: "relatorio", icon: FileBarChart2 },
+    { id: 8, title: "Encaminhamento cardiologista", description: "Encaminhamento para especialista", type: "encaminhamento", icon: FileOutput },
+    { id: 9, title: "Orientações pós-consulta", description: "Orientações de cuidados pós-consulta", type: "orientacoes", icon: FileText },
   ];
 
   const filteredPrescriptions = prescriptions.filter(prescription => {
@@ -118,6 +130,11 @@ export default function Prescription() {
       case "simples": return "Receita Simples";
       case "especial": return "Receituário Especial";
       case "exame": return "Exames";
+      case "atestado": return "Atestado Médico";
+      case "relatorio": return "Relatório Médico";
+      case "encaminhamento": return "Encaminhamento";
+      case "orientacoes": return "Orientações";
+      case "declaracao": return "Declaração";
       default: return "";
     }
   };
@@ -127,6 +144,11 @@ export default function Prescription() {
       case "simples": return <FileText className="h-5 w-5" />;
       case "especial": return <Stethoscope className="h-5 w-5" />;
       case "exame": return <FileCheck className="h-5 w-5" />;
+      case "atestado": return <FileBadge className="h-5 w-5" />;
+      case "relatorio": return <FileBarChart2 className="h-5 w-5" />;
+      case "encaminhamento": return <FileOutput className="h-5 w-5" />;
+      case "orientacoes": return <FileText className="h-5 w-5" />;
+      case "declaracao": return <FileText className="h-5 w-5" />;
       default: return <FileText className="h-5 w-5" />;
     }
   };
@@ -175,6 +197,7 @@ export default function Prescription() {
     setPrescriptionDialog(true);
     prescriptionForm.setValue("type", template.type);
     prescriptionForm.setValue("description", template.title);
+    prescriptionForm.setValue("documentType", template.type === "simples" || template.type === "especial" ? "receita" : template.type);
   };
 
   return (
@@ -218,6 +241,35 @@ export default function Prescription() {
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={prescriptionForm.control}
+                    name="documentType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de documento</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="receita">Receita</SelectItem>
+                            <SelectItem value="exame">Solicitação de Exames</SelectItem>
+                            <SelectItem value="atestado">Atestado Médico</SelectItem>
+                            <SelectItem value="relatorio">Relatório Médico</SelectItem>
+                            <SelectItem value="encaminhamento">Encaminhamento</SelectItem>
+                            <SelectItem value="orientacoes">Orientações</SelectItem>
+                            <SelectItem value="declaracao">Declaração de Comparecimento</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={prescriptionForm.control}
                     name="type"
                     render={({ field }) => (
                       <FormItem>
@@ -240,20 +292,20 @@ export default function Prescription() {
                       </FormItem>
                     )}
                   />
-                  
-                  <FormField
-                    control={prescriptionForm.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Descrição</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Breve descrição da prescrição" {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
                 </div>
+                
+                <FormField
+                  control={prescriptionForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Breve descrição da prescrição" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
                 
                 <FormField
                   control={prescriptionForm.control}
@@ -311,8 +363,8 @@ export default function Prescription() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-4 mb-4">
               <TabsTrigger value="all">Todos</TabsTrigger>
-              <TabsTrigger value="simples">Receita Simples</TabsTrigger>
-              <TabsTrigger value="especial">Receituário Especial</TabsTrigger>
+              <TabsTrigger value="simples">Receitas</TabsTrigger>
+              <TabsTrigger value="atestado">Atestados</TabsTrigger>
               <TabsTrigger value="exame">Exames</TabsTrigger>
             </TabsList>
             
@@ -428,166 +480,205 @@ export default function Prescription() {
                   </DialogHeader>
                   
                   <Form {...templateForm}>
-                    <form onSubmit={templateForm.handleSubmit(onCreateTemplate)} className="space-y-4">
-                      <FormField
-                        control={templateForm.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Título do template</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: Dislipidemia leve" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={templateForm.control}
-                          name="type"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Tipo de receituário</FormLabel>
-                              <Select 
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                              >
+                    <form onSubmit={templateForm.handleSubmit(onCreateTemplate)} className="space-y-6">
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2">Informações Básicas</h4>
+                        <div className="space-y-4">
+                          <FormField
+                            control={templateForm.control}
+                            name="title"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Título do template</FormLabel>
                                 <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione o tipo" />
-                                  </SelectTrigger>
+                                  <Input placeholder="Ex: Dislipidemia leve" {...field} />
                                 </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="simples">Receita Simples</SelectItem>
-                                  <SelectItem value="especial">Receituário Especial</SelectItem>
-                                  <SelectItem value="exame">Exames</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={templateForm.control}
-                          name="description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Descrição breve</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Breve descrição do template" {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      <FormField
-                        control={templateForm.control}
-                        name="content"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Conteúdo do template</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Digite o conteúdo padrão para este tipo de prescrição..." 
-                                className="min-h-[200px]"
-                                {...field}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setTemplateDialog(false)}>Cancelar</Button>
-                        <Button type="submit">Criar template</Button>
-                      </DialogFooter>
-                    </form>
-                  </Form>
-                </DialogContent>
-              </Dialog>
-            </div>
-          ) : (
-            <Card className="p-8 flex flex-col items-center justify-center text-center">
-              <div className="h-20 w-20 mb-4 rounded-full bg-muted/30 flex items-center justify-center text-muted-foreground">
-                <FileText className="h-8 w-8" />
-              </div>
-              <h3 className="text-lg font-medium mb-1">Templates de prescrição</h3>
-              <p className="text-sm text-muted-foreground max-w-md mb-6">
-                Crie templates reutilizáveis para agilizar suas prescrições médicas mais comuns
-              </p>
-              
-              <Dialog open={templateDialog} onOpenChange={setTemplateDialog}>
-                <DialogTrigger asChild>
-                  <Button className="bg-cardio-600 hover:bg-cardio-700">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar template
-                  </Button>
-                </DialogTrigger>
-                
-                <DialogContent className="max-w-3xl">
-                  <DialogHeader>
-                    <DialogTitle>Criar novo template</DialogTitle>
-                    <DialogDescription>
-                      Crie um template reutilizável para suas prescrições mais frequentes.
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <Form {...templateForm}>
-                    <form onSubmit={templateForm.handleSubmit(onCreateTemplate)} className="space-y-4">
-                      <FormField
-                        control={templateForm.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Título do template</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: Dislipidemia leve" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={templateForm.control}
-                          name="type"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Tipo de receituário</FormLabel>
-                              <Select 
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                              >
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={templateForm.control}
+                              name="documentType"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Tipo de documento</FormLabel>
+                                  <Select 
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Selecione o tipo" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="receita">Receita</SelectItem>
+                                      <SelectItem value="exame">Solicitação de Exames</SelectItem>
+                                      <SelectItem value="atestado">Atestado Médico</SelectItem>
+                                      <SelectItem value="relatorio">Relatório Médico</SelectItem>
+                                      <SelectItem value="encaminhamento">Encaminhamento</SelectItem>
+                                      <SelectItem value="orientacoes">Orientações</SelectItem>
+                                      <SelectItem value="declaracao">Declaração de Comparecimento</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={templateForm.control}
+                              name="type"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Tipo de receituário</FormLabel>
+                                  <Select 
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Selecione o tipo" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="simples">Receita Simples</SelectItem>
+                                      <SelectItem value="especial">Receituário Especial</SelectItem>
+                                      <SelectItem value="exame">Exames</SelectItem>
+                                      <SelectItem value="atestado">Atestado</SelectItem>
+                                      <SelectItem value="relatorio">Relatório</SelectItem>
+                                      <SelectItem value="encaminhamento">Encaminhamento</SelectItem>
+                                      <SelectItem value="orientacoes">Orientações</SelectItem>
+                                      <SelectItem value="declaracao">Declaração</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <FormField
+                            control={templateForm.control}
+                            name="description"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Descrição breve</FormLabel>
                                 <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione o tipo" />
-                                  </SelectTrigger>
+                                  <Input placeholder="Breve descrição do template" {...field} />
                                 </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="simples">Receita Simples</SelectItem>
-                                  <SelectItem value="especial">Receituário Especial</SelectItem>
-                                  <SelectItem value="exame">Exames</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={templateForm.control}
-                          name="description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Descrição breve</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Breve descrição do template" {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
+
+                      <Separator />
+
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2">Estrutura do Documento</h4>
+                        <div className="space-y-4">
+                          <FormField
+                            control={templateForm.control}
+                            name="header"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Cabeçalho do documento</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Ex: Hospital Cardiológico - Serviço de Cardiologia" {...field} />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={templateForm.control}
+                              name="doctorInfo"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroup
+                                      onValueChange={(value) => field.onChange(value === "true")}
+                                      defaultValue={field.value ? "true" : "false"}
+                                      className="flex flex-col space-y-1"
+                                    >
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="true" id="doctorInfo-yes" />
+                                        <FormLabel htmlFor="doctorInfo-yes" className="font-normal">
+                                          Incluir informações do médico
+                                        </FormLabel>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="false" id="doctorInfo-no" />
+                                        <FormLabel htmlFor="doctorInfo-no" className="font-normal">
+                                          Não incluir
+                                        </FormLabel>
+                                      </div>
+                                    </RadioGroup>
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={templateForm.control}
+                              name="signature"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroup
+                                      onValueChange={(value) => field.onChange(value === "true")}
+                                      defaultValue={field.value ? "true" : "false"}
+                                      className="flex flex-col space-y-1"
+                                    >
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="true" id="signature-yes" />
+                                        <FormLabel htmlFor="signature-yes" className="font-normal">
+                                          Incluir espaço para assinatura
+                                        </FormLabel>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="false" id="signature-no" />
+                                        <FormLabel htmlFor="signature-no" className="font-normal">
+                                          Não incluir
+                                        </FormLabel>
+                                      </div>
+                                    </RadioGroup>
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <FormField
+                            control={templateForm.control}
+                            name="dateCity"
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="flex items-center space-x-2">
+                                  <FormControl>
+                                    <input
+                                      type="checkbox"
+                                      checked={field.value}
+                                      onChange={(e) => field.onChange(e.target.checked)}
+                                      className="h-4 w-4 rounded border-gray-300 text-cardio-600 focus:ring-cardio-600"
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    Incluir data e cidade automaticamente
+                                  </FormLabel>
+                                </div>
+                                <FormDescription>
+                                  Adiciona "Cidade, XX de XXXX de XXXX" automaticamente no documento
+                                </FormDescription>
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      <Separator />
                       
                       <FormField
                         control={templateForm.control}
