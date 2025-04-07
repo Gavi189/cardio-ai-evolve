@@ -1,14 +1,8 @@
 
-import { useEffect, useState } from "react";
-import { 
-  Activity, ChevronRight, HeartPulse, HelpCircle, LineChart, PlusCircle
-} from "lucide-react";
+import { useState } from "react";
+import { Activity, ArrowLeft, ArrowRight, HelpCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Select, 
   SelectContent, 
@@ -21,188 +15,183 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 export default function RiskCalculator() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("heart");
-  const [score, setScore] = useState<number | null>(null);
-  const [risk, setRisk] = useState<string>("");
+  const [currentStep, setCurrentStep] = useState(1);
+  const [risk, setRisk] = useState<"Baixo" | "Moderado" | "Alto" | "Muito Alto" | null>(null);
   
-  // HEART Score
-  const [history, setHistory] = useState<string | null>(null);
-  const [ecg, setEcg] = useState<string | null>(null);
-  const [age, setAge] = useState<string | null>(null);
-  const [riskFactors, setRiskFactors] = useState<string | null>(null);
-  const [troponin, setTroponin] = useState<string | null>(null);
+  // Step 1 - Atherosclerotic disease
+  const [hasAtheroscleroticDisease, setHasAtheroscleroticDisease] = useState<boolean | null>(null);
   
-  // Framingham
+  // Step 2 - Diabetes
+  const [hasDiabetes, setHasDiabetes] = useState<boolean | null>(null);
+  
+  // Step 3 - Subclinical atherosclerosis or equivalent conditions
+  const [hasSubclinicalAtherosclerosis, setHasSubclinicalAtherosclerosis] = useState<boolean | null>(null);
+  
+  // Step 4 - Risk factors
   const [gender, setGender] = useState<string | null>(null);
-  const [ageFramingham, setAgeFramingham] = useState<string>("");
-  const [cholesterol, setCholesterol] = useState<string>("");
-  const [hdl, setHdl] = useState<string>("");
-  const [systolic, setSystolic] = useState<string>("");
-  const [smoker, setSmoker] = useState<string | null>(null);
-  const [diabetes, setDiabetes] = useState<string | null>(null);
+  const [age, setAge] = useState<string | null>(null);
+  const [systolicBP, setSystolicBP] = useState<string | null>(null);
+  const [treatedBP, setTreatedBP] = useState<string | null>(null);
+  const [smoking, setSmoking] = useState<string | null>(null);
+  const [statin, setStatin] = useState<string | null>(null);
+  const [totalCholesterol, setTotalCholesterol] = useState("");
+  const [hdl, setHdl] = useState<string | null>(null);
 
-  // CHA₂DS₂-VASc
-  const [chf, setChf] = useState<boolean>(false);
-  const [hypertension, setHypertension] = useState<boolean>(false);
-  const [ageCha, setAgeCha] = useState<string | null>(null);
-  const [diabetesCha, setDiabetesCha] = useState<boolean>(false);
-  const [stroke, setStroke] = useState<boolean>(false);
-  const [vascularDisease, setVascularDisease] = useState<boolean>(false);
-  const [genderCha, setGenderCha] = useState<string | null>(null);
-
-  const calculateHEARTScore = () => {
-    if (!history || !ecg || !age || !riskFactors || !troponin) {
+  const handleNextStep = () => {
+    // Validation for each step
+    if (currentStep === 1 && hasAtheroscleroticDisease === null) {
       toast({
-        title: "Dados incompletos",
-        description: "Por favor, preencha todos os campos.",
+        title: "Campo obrigatório",
+        description: "Por favor, responda à pergunta para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (currentStep === 2 && hasDiabetes === null) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, responda à pergunta para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (currentStep === 3 && hasSubclinicalAtherosclerosis === null) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, responda à pergunta para continuar.",
         variant: "destructive",
       });
       return;
     }
 
-    // Cálculo do HEART Score
-    const historyValue = parseInt(history);
-    const ecgValue = parseInt(ecg);
-    const ageValue = parseInt(age);
-    const riskFactorsValue = parseInt(riskFactors);
-    const troponinValue = parseInt(troponin);
-
-    const totalScore = historyValue + ecgValue + ageValue + riskFactorsValue + troponinValue;
-    setScore(totalScore);
-
-    // Classificação de risco
-    if (totalScore <= 3) {
-      setRisk("Baixo");
-    } else if (totalScore <= 6) {
-      setRisk("Moderado");
-    } else {
-      setRisk("Alto");
+    // If questionnaire conditions met for high risk classification on early steps
+    if (currentStep === 1 && hasAtheroscleroticDisease) {
+      setRisk("Muito Alto");
+      setCurrentStep(5); // Go to results
+      return;
     }
-
-    toast({
-      title: "Score HEART calculado",
-      description: `Pontuação: ${totalScore} - Risco: ${totalScore <= 3 ? "Baixo" : totalScore <= 6 ? "Moderado" : "Alto"}`,
-    });
-  };
-
-  const calculateFramingham = () => {
-    if (!gender || !ageFramingham || !cholesterol || !hdl || !systolic || !smoker || !diabetes) {
-      toast({
-        title: "Dados incompletos",
-        description: "Por favor, preencha todos os campos.",
-        variant: "destructive",
-      });
+    
+    if (currentStep === 2 && hasDiabetes) {
+      setRisk("Alto");
+      setCurrentStep(5); // Go to results
+      return;
+    }
+    
+    if (currentStep === 3 && hasSubclinicalAtherosclerosis) {
+      setRisk("Alto");
+      setCurrentStep(5); // Go to results
       return;
     }
 
-    // Cálculo simplificado do Framingham
-    // Em um sistema real, seria implementado o algoritmo completo
-    let totalScore = 0;
-    
-    // Age points
-    const ageValue = parseInt(ageFramingham);
-    if (ageValue >= 60) totalScore += 3;
-    else if (ageValue >= 50) totalScore += 2;
-    else if (ageValue >= 40) totalScore += 1;
-    
-    // Cholesterol points
-    const cholValue = parseInt(cholesterol);
-    if (cholValue > 240) totalScore += 2;
-    else if (cholValue >= 200) totalScore += 1;
-    
-    // HDL points
-    const hdlValue = parseInt(hdl);
-    if (hdlValue < 40) totalScore += 1;
-    else if (hdlValue > 60) totalScore -= 1;
-    
-    // BP points
-    const systolicValue = parseInt(systolic);
-    if (systolicValue >= 160) totalScore += 2;
-    else if (systolicValue >= 140) totalScore += 1;
-    
-    // Additional factors
-    if (smoker === "yes") totalScore += 1;
-    if (diabetes === "yes") totalScore += 2;
-    
-    setScore(totalScore);
-    
-    // Simplified risk classification
-    if (totalScore <= 2) {
-      setRisk("Baixo");
-    } else if (totalScore <= 5) {
-      setRisk("Moderado");
-    } else {
-      setRisk("Alto");
-    }
+    // Step 4 validation
+    if (currentStep === 4) {
+      if (!gender || !age || !systolicBP || !treatedBP || !smoking || !statin || !totalCholesterol || !hdl) {
+        toast({
+          title: "Dados incompletos",
+          description: "Por favor, preencha todos os campos para calcular o risco.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    toast({
-      title: "Risco cardiovascular Framingham",
-      description: `Pontuação: ${totalScore} - Risco: ${totalScore <= 2 ? "Baixo" : totalScore <= 5 ? "Moderado" : "Alto"}`,
-    });
-  };
-
-  const calculateCHADS = () => {
-    if (!ageCha || !genderCha) {
-      toast({
-        title: "Dados incompletos",
-        description: "Por favor, selecione a idade e o gênero do paciente.",
-        variant: "destructive",
-      });
+      // Simplified risk calculation based on factors
+      calculateRisk();
+      setCurrentStep(5); // Go to results
       return;
     }
 
-    // Cálculo do CHA₂DS₂-VASc Score
-    let totalScore = 0;
+    // Move to next step
+    setCurrentStep(currentStep + 1);
+  };
+
+  const handlePreviousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const calculateRisk = () => {
+    // Simplified risk calculation logic for demonstration
+    let riskPoints = 0;
     
-    if (chf) totalScore += 1;
-    if (hypertension) totalScore += 1;
+    // Add points based on age
+    if (age === "65-74") {
+      riskPoints += 1;
+    } else if (age === "75+") {
+      riskPoints += 2;
+    }
     
-    const ageValue = ageCha;
-    if (ageValue === "75+") totalScore += 2;
-    else if (ageValue === "65-74") totalScore += 1;
+    // Add points for smoking
+    if (smoking === "sim") {
+      riskPoints += 1;
+    }
     
-    if (diabetesCha) totalScore += 1;
-    if (stroke) totalScore += 2;
-    if (vascularDisease) totalScore += 1;
-    if (genderCha === "female") totalScore += 1;
+    // Add points for high systolic BP
+    if (systolicBP === "140-159") {
+      riskPoints += 1;
+    } else if (systolicBP === "160+") {
+      riskPoints += 2;
+    }
     
-    setScore(totalScore);
+    // Adjust points for HDL
+    if (hdl === "baixo") {
+      riskPoints += 1;
+    } else if (hdl === "alto") {
+      riskPoints -= 1;
+    }
     
-    // Risk classification
-    if (totalScore === 0) {
+    // Adjust for total cholesterol
+    const cholValue = parseInt(totalCholesterol);
+    if (cholValue >= 240) {
+      riskPoints += 1;
+    } else if (cholValue >= 280) {
+      riskPoints += 2;
+    }
+
+    // Determine risk category based on points
+    if (riskPoints <= 1) {
       setRisk("Baixo");
-    } else if (totalScore === 1) {
-      setRisk("Baixo-Moderado");
-    } else if (totalScore <= 3) {
+    } else if (riskPoints <= 3) {
       setRisk("Moderado");
     } else {
       setRisk("Alto");
     }
-
-    toast({
-      title: "CHA₂DS₂-VASc Score calculado",
-      description: `Pontuação: ${totalScore} - Risco de AVC: ${totalScore === 0 ? "Baixo" : totalScore === 1 ? "Baixo-Moderado" : totalScore <= 3 ? "Moderado" : "Alto"}`,
-    });
   };
 
-  useEffect(() => {
-    setScore(null);
-    setRisk("");
-  }, [activeTab]);
+  const resetCalculator = () => {
+    setCurrentStep(1);
+    setRisk(null);
+    setHasAtheroscleroticDisease(null);
+    setHasDiabetes(null);
+    setHasSubclinicalAtherosclerosis(null);
+    setGender(null);
+    setAge(null);
+    setSystolicBP(null);
+    setTreatedBP(null);
+    setSmoking(null);
+    setStatin(null);
+    setTotalCholesterol("");
+    setHdl(null);
+  };
 
-  const getRiskColorClass = (riskLevel: string) => {
+  const getRiskColor = (riskLevel: string | null) => {
     switch(riskLevel) {
       case "Baixo":
-      case "Baixo-Moderado":
-        return "risk-low";
+        return "bg-green-500 text-white";
       case "Moderado":
-        return "risk-medium";
+        return "bg-yellow-500 text-white";
       case "Alto":
-        return "risk-high";
+        return "bg-orange-500 text-white";
+      case "Muito Alto":
+        return "bg-red-500 text-white";
       default:
         return "";
     }
@@ -213,491 +202,353 @@ export default function RiskCalculator() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gradient-cardio mb-1">Calculadora de Risco</h1>
-          <p className="text-muted-foreground">Avaliação de risco cardiovascular do paciente</p>
+          <p className="text-muted-foreground">Estratificação de Risco Cardiovascular - SBC</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardContent className="p-0">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-3 border-b rounded-none h-14">
-                <TabsTrigger value="heart" className="flex items-center gap-2 data-[state=active]:text-cardio-600">
-                  <HeartPulse className="h-4 w-4" />
-                  HEART Score
-                </TabsTrigger>
-                <TabsTrigger value="framingham" className="flex items-center gap-2 data-[state=active]:text-cardio-600">
-                  <LineChart className="h-4 w-4" />
-                  Framingham
-                </TabsTrigger>
-                <TabsTrigger value="chads" className="flex items-center gap-2 data-[state=active]:text-cardio-600">
-                  <Activity className="h-4 w-4" />
-                  CHA₂DS₂-VASc
-                </TabsTrigger>
-              </TabsList>
-              
-              <div className="p-6">
-                {/* HEART Score */}
-                <TabsContent value="heart" className="mt-0 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label className="flex items-center gap-1 mb-2">
-                        História Clínica
-                        <HoverCard>
-                          <HoverCardTrigger>
-                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                          </HoverCardTrigger>
-                          <HoverCardContent>
-                            <p className="text-sm">
-                              <strong>0 pontos:</strong> Não sugestivo<br />
-                              <strong>1 ponto:</strong> Moderadamente sugestivo<br />
-                              <strong>2 pontos:</strong> Altamente sugestivo
-                            </p>
-                          </HoverCardContent>
-                        </HoverCard>
-                      </Label>
-                      <RadioGroup value={history || ""} onValueChange={setHistory}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="0" id="h0" />
-                          <Label htmlFor="h0">Não sugestivo (0 pts)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="1" id="h1" />
-                          <Label htmlFor="h1">Moderadamente sugestivo (1 pt)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="2" id="h2" />
-                          <Label htmlFor="h2">Altamente sugestivo (2 pts)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="flex items-center gap-1 mb-2">
-                        ECG
-                        <HoverCard>
-                          <HoverCardTrigger>
-                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                          </HoverCardTrigger>
-                          <HoverCardContent>
-                            <p className="text-sm">
-                              <strong>0 pontos:</strong> Normal<br />
-                              <strong>1 ponto:</strong> Anormalidade não específica<br />
-                              <strong>2 pontos:</strong> Alterações isquêmicas
-                            </p>
-                          </HoverCardContent>
-                        </HoverCard>
-                      </Label>
-                      <RadioGroup value={ecg || ""} onValueChange={setEcg}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="0" id="e0" />
-                          <Label htmlFor="e0">Normal (0 pts)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="1" id="e1" />
-                          <Label htmlFor="e1">Anormalidade não específica (1 pt)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="2" id="e2" />
-                          <Label htmlFor="e2">Alterações isquêmicas (2 pts)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="flex items-center gap-1 mb-2">Idade</Label>
-                      <RadioGroup value={age || ""} onValueChange={setAge}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="0" id="a0" />
-                          <Label htmlFor="a0">Menos de 45 anos (0 pts)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="1" id="a1" />
-                          <Label htmlFor="a1">Entre 45-65 anos (1 pt)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="2" id="a2" />
-                          <Label htmlFor="a2">Acima de 65 anos (2 pts)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="flex items-center gap-1 mb-2">
-                        Fatores de Risco
-                        <HoverCard>
-                          <HoverCardTrigger>
-                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                          </HoverCardTrigger>
-                          <HoverCardContent className="w-80">
-                            <p className="text-sm">
-                              Fatores de risco: hipertensão, dislipidemia, diabetes, tabagismo, obesidade e histórico familiar.
-                              <br /><br />
-                              <strong>0 pontos:</strong> Sem fatores de risco<br />
-                              <strong>1 ponto:</strong> 1-2 fatores de risco<br />
-                              <strong>2 pontos:</strong> ≥3 fatores de risco ou aterosclerose conhecida
-                            </p>
-                          </HoverCardContent>
-                        </HoverCard>
-                      </Label>
-                      <RadioGroup value={riskFactors || ""} onValueChange={setRiskFactors}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="0" id="r0" />
-                          <Label htmlFor="r0">Sem fatores (0 pts)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="1" id="r1" />
-                          <Label htmlFor="r1">1-2 fatores (1 pt)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="2" id="r2" />
-                          <Label htmlFor="r2">≥3 fatores ou aterosclerose (2 pts)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="flex items-center gap-1 mb-2">
-                        Troponina
-                        <HoverCard>
-                          <HoverCardTrigger>
-                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                          </HoverCardTrigger>
-                          <HoverCardContent>
-                            <p className="text-sm">
-                              <strong>0 pontos:</strong> ≤ limite normal<br />
-                              <strong>1 ponto:</strong> 1-3x limite normal<br />
-                              <strong>2 pontos:</strong> &gt;3x limite normal
-                            </p>
-                          </HoverCardContent>
-                        </HoverCard>
-                      </Label>
-                      <RadioGroup value={troponin || ""} onValueChange={setTroponin}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="0" id="t0" />
-                          <Label htmlFor="t0">≤ limite normal (0 pts)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="1" id="t1" />
-                          <Label htmlFor="t1">1-3x limite normal (1 pt)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="2" id="t2" />
-                          <Label htmlFor="t2">&gt;3x limite normal (2 pts)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                  </div>
-                  
-                  <Button className="bg-cardio-600 hover:bg-cardio-700 w-full" onClick={calculateHEARTScore}>
-                    Calcular Score HEART
-                  </Button>
-                </TabsContent>
-                
-                {/* Framingham */}
-                <TabsContent value="framingham" className="mt-0 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label className="mb-2">Gênero</Label>
-                      <RadioGroup value={gender || ""} onValueChange={setGender}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="male" id="gm" />
-                          <Label htmlFor="gm">Masculino</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="female" id="gf" />
-                          <Label htmlFor="gf">Feminino</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="age-f">Idade (anos)</Label>
-                      <Input 
-                        id="age-f" 
-                        type="number" 
-                        placeholder="Ex: 55" 
-                        value={ageFramingham}
-                        onChange={(e) => setAgeFramingham(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="cholesterol">Colesterol Total (mg/dL)</Label>
-                      <Input 
-                        id="cholesterol" 
-                        type="number" 
-                        placeholder="Ex: 220" 
-                        value={cholesterol}
-                        onChange={(e) => setCholesterol(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="hdl">HDL (mg/dL)</Label>
-                      <Input 
-                        id="hdl" 
-                        type="number" 
-                        placeholder="Ex: 45" 
-                        value={hdl}
-                        onChange={(e) => setHdl(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="systolic">Pressão Arterial Sistólica (mmHg)</Label>
-                      <Input 
-                        id="systolic" 
-                        type="number" 
-                        placeholder="Ex: 130" 
-                        value={systolic}
-                        onChange={(e) => setSystolic(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label className="mb-2">Tabagista</Label>
-                      <RadioGroup value={smoker || ""} onValueChange={setSmoker}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="yes" id="sy" />
-                          <Label htmlFor="sy">Sim</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="sn" />
-                          <Label htmlFor="sn">Não</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="mb-2">Diabetes</Label>
-                      <RadioGroup value={diabetes || ""} onValueChange={setDiabetes}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="yes" id="dy" />
-                          <Label htmlFor="dy">Sim</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="dn" />
-                          <Label htmlFor="dn">Não</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                  </div>
-                  
-                  <Button className="bg-cardio-600 hover:bg-cardio-700 w-full" onClick={calculateFramingham}>
-                    Calcular Risco Framingham
-                  </Button>
-                </TabsContent>
-                
-                {/* CHA₂DS₂-VASc */}
-                <TabsContent value="chads" className="mt-0 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label className="mb-2">Insuficiência Cardíaca Congestiva</Label>
-                      <RadioGroup value={chf ? "yes" : "no"} onValueChange={(v) => setChf(v === "yes")}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="yes" id="chfy" />
-                          <Label htmlFor="chfy">Sim (1 pt)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="chfn" />
-                          <Label htmlFor="chfn">Não (0 pts)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="mb-2">Hipertensão</Label>
-                      <RadioGroup value={hypertension ? "yes" : "no"} onValueChange={(v) => setHypertension(v === "yes")}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="yes" id="hty" />
-                          <Label htmlFor="hty">Sim (1 pt)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="htn" />
-                          <Label htmlFor="htn">Não (0 pts)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="mb-2">Idade</Label>
-                      <RadioGroup value={ageCha || ""} onValueChange={setAgeCha}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="<65" id="age1" />
-                          <Label htmlFor="age1">&lt; 65 anos (0 pts)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="65-74" id="age2" />
-                          <Label htmlFor="age2">65-74 anos (1 pt)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="75+" id="age3" />
-                          <Label htmlFor="age3">≥ 75 anos (2 pts)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="mb-2">Diabetes</Label>
-                      <RadioGroup value={diabetesCha ? "yes" : "no"} onValueChange={(v) => setDiabetesCha(v === "yes")}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="yes" id="diaby" />
-                          <Label htmlFor="diaby">Sim (1 pt)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="diabn" />
-                          <Label htmlFor="diabn">Não (0 pts)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="mb-2">AVC/AIT/Tromboembolismo prévio</Label>
-                      <RadioGroup value={stroke ? "yes" : "no"} onValueChange={(v) => setStroke(v === "yes")}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="yes" id="stry" />
-                          <Label htmlFor="stry">Sim (2 pts)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="strn" />
-                          <Label htmlFor="strn">Não (0 pts)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="mb-2">Doença Vascular</Label>
-                      <RadioGroup value={vascularDisease ? "yes" : "no"} onValueChange={(v) => setVascularDisease(v === "yes")}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="yes" id="vdy" />
-                          <Label htmlFor="vdy">Sim (1 pt)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="no" id="vdn" />
-                          <Label htmlFor="vdn">Não (0 pts)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
-                      <Label className="mb-2">Gênero</Label>
-                      <RadioGroup value={genderCha || ""} onValueChange={setGenderCha}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="male" id="cham" />
-                          <Label htmlFor="cham">Masculino (0 pts)</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="female" id="chaf" />
-                          <Label htmlFor="chaf">Feminino (1 pt)</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                  </div>
-                  
-                  <Button className="bg-cardio-600 hover:bg-cardio-700 w-full" onClick={calculateCHADS}>
-                    Calcular CHA₂DS₂-VASc Score
-                  </Button>
-                </TabsContent>
-              </div>
-            </Tabs>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Activity className="h-5 w-5 mr-2 text-cardio-600" />
-              Resultado
+          <CardHeader className="bg-gradient-to-r from-cardio-600 to-cardio-700 text-white pb-2">
+            <CardTitle className="text-white font-semibold">
+              CALCULADORA PARA ESTRATIFICAÇÃO DE RISCO CARDIOVASCULAR
             </CardTitle>
-            <CardDescription>
-              {activeTab === "heart" && "Score HEART para Dor Torácica"}
-              {activeTab === "framingham" && "Risco cardiovascular em 10 anos"}
-              {activeTab === "chads" && "Risco de AVC em fibrilação atrial"}
-            </CardDescription>
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm">Etapa</div>
+              <div className="flex space-x-2">
+                {[1, 2, 3, 4].map((step) => (
+                  <span 
+                    key={step} 
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-sm
+                      ${currentStep === step ? 'bg-white text-cardio-600 font-bold' : 'bg-white/20 text-white'}`}
+                  >
+                    {step}
+                  </span>
+                ))}
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            {score !== null ? (
-              <div className="space-y-6">
-                <div className="flex flex-col items-center">
-                  <div className="text-lg text-muted-foreground mb-2">Score</div>
-                  <div className="text-5xl font-bold text-cardio-600">{score}</div>
+          <CardContent className="p-6">
+            {/* Step 1: Atherosclerotic disease */}
+            {currentStep === 1 && (
+              <div className="space-y-8">
+                <div className="text-lg font-medium text-center max-w-3xl mx-auto">
+                  Presença de doença aterosclerótica significativa (coronária, cerebrovascular, 
+                  vascular periférica), com ou sem eventos clínicos ou obstrução ≥ 50% em qualquer território arterial?
                 </div>
                 
-                <div className="flex flex-col items-center">
-                  <div className="text-lg text-muted-foreground mb-2">Risco</div>
-                  <div className={`text-2xl font-bold px-4 py-2 rounded-full ${getRiskColorClass(risk)}`}>
+                <div className="flex justify-center gap-4 mt-8">
+                  <Button 
+                    className={`w-32 ${hasAtheroscleroticDisease === true ? 'bg-cardio-600' : 'bg-teal-600'}`}
+                    onClick={() => setHasAtheroscleroticDisease(true)}
+                  >
+                    SIM
+                  </Button>
+                  <Button 
+                    className={`w-32 ${hasAtheroscleroticDisease === false ? 'bg-cardio-600' : 'bg-teal-600'}`}
+                    onClick={() => setHasAtheroscleroticDisease(false)}
+                  >
+                    NÃO
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Diabetes */}
+            {currentStep === 2 && (
+              <div className="space-y-8">
+                <div className="text-lg font-medium text-center max-w-3xl mx-auto">
+                  Portador de Diabetes Melito tipo 1 ou Tipo 2?
+                </div>
+                
+                <div className="flex justify-center gap-4 mt-8">
+                  <Button 
+                    className={`w-32 ${hasDiabetes === true ? 'bg-cardio-600' : 'bg-teal-600'}`}
+                    onClick={() => setHasDiabetes(true)}
+                  >
+                    SIM
+                  </Button>
+                  <Button 
+                    className={`w-32 ${hasDiabetes === false ? 'bg-cardio-600' : 'bg-teal-600'}`}
+                    onClick={() => setHasDiabetes(false)}
+                  >
+                    NÃO
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Subclinical atherosclerosis or equivalent conditions */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <div className="text-lg font-medium">
+                  Portadores de aterosclerose na forma subclínica documentada por metodologia diagnóstica:
+                </div>
+                
+                <div className="space-y-2 pl-4">
+                  <div className="text-gray-700">- ultrassonografia de carótidas com presença de placa;</div>
+                  <div className="text-gray-700">- índice tornozelo-braquial (ITB) &lt; 0,9;</div>
+                  <div className="text-gray-700">- escore de cálcio coronário (CAC) &gt; 100 ou a presença de placas ateroscleróticas 
+                    na angiotomografia de coronárias (angioCT)</div>
+                </div>
+                
+                <div className="text-center py-2 text-gray-500 italic">OU</div>
+                
+                <div className="text-gray-700">Aneurisma de aorta abdominal</div>
+                
+                <div className="text-center py-2 text-gray-500 italic">OU</div>
+                
+                <div className="text-gray-700">Doença renal crônica definida por taxa de filtração glomerular &lt; 60 mL/min, e em fase não-dialítica</div>
+                
+                <div className="text-center py-2 text-gray-500 italic">OU</div>
+                
+                <div className="text-gray-700">LDL-c ≥ 190 mg/dL</div>
+                
+                <div className="flex justify-center gap-4 mt-6">
+                  <Button 
+                    className={`w-32 ${hasSubclinicalAtherosclerosis === true ? 'bg-cardio-600' : 'bg-teal-600'}`}
+                    onClick={() => setHasSubclinicalAtherosclerosis(true)}
+                  >
+                    SIM
+                  </Button>
+                  <Button 
+                    className={`w-32 ${hasSubclinicalAtherosclerosis === false ? 'bg-cardio-600' : 'bg-teal-600'}`}
+                    onClick={() => setHasSubclinicalAtherosclerosis(false)}
+                  >
+                    NÃO
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Risk factors */}
+            {currentStep === 4 && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Sexo</Label>
+                    <Select value={gender || ""} onValueChange={setGender}>
+                      <SelectTrigger id="gender">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="feminino">Feminino</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="age">Idade</Label>
+                    <Select value={age || ""} onValueChange={setAge}>
+                      <SelectTrigger id="age">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="<45">&lt; 45 anos</SelectItem>
+                        <SelectItem value="45-54">45-54 anos</SelectItem>
+                        <SelectItem value="55-64">55-64 anos</SelectItem>
+                        <SelectItem value="65-74">65-74 anos</SelectItem>
+                        <SelectItem value="75+">≥ 75 anos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="sysbp">PAS</Label>
+                    <Select value={systolicBP || ""} onValueChange={setSystolicBP}>
+                      <SelectTrigger id="sysbp">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="<130">&lt; 130 mmHg</SelectItem>
+                        <SelectItem value="130-139">130-139 mmHg</SelectItem>
+                        <SelectItem value="140-159">140-159 mmHg</SelectItem>
+                        <SelectItem value="160+">≥ 160 mmHg</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="treatedbp">PAS-Tratada</Label>
+                    <Select value={treatedBP || ""} onValueChange={setTreatedBP}>
+                      <SelectTrigger id="treatedbp">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sim">Sim</SelectItem>
+                        <SelectItem value="nao">Não</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="smoking">Fumo</Label>
+                    <Select value={smoking || ""} onValueChange={setSmoking}>
+                      <SelectTrigger id="smoking">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sim">Sim</SelectItem>
+                        <SelectItem value="nao">Não</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="statin">Toma Estatina?</Label>
+                    <Select value={statin || ""} onValueChange={setStatin}>
+                      <SelectTrigger id="statin">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sim">Sim</SelectItem>
+                        <SelectItem value="nao">Não</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="tc">CT (mg/dL)</Label>
+                    <Input 
+                      id="tc" 
+                      type="number" 
+                      placeholder="Ex: 200" 
+                      value={totalCholesterol}
+                      onChange={(e) => setTotalCholesterol(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="hdl">HDL-C</Label>
+                    <Select value={hdl || ""} onValueChange={setHdl}>
+                      <SelectTrigger id="hdl">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="baixo">&lt; 40 mg/dL</SelectItem>
+                        <SelectItem value="normal">40-60 mg/dL</SelectItem>
+                        <SelectItem value="alto">&gt; 60 mg/dL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Results Screen */}
+            {currentStep === 5 && (
+              <div className="space-y-6">
+                <div className="text-2xl font-bold text-center mb-6">Resultado</div>
+                
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <div className="text-lg">RISCO:</div>
+                  <div className={`text-2xl font-bold px-16 py-2 rounded-full ${getRiskColor(risk)}`}>
                     {risk}
                   </div>
                 </div>
                 
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground mb-3">Recomendação Clínica:</p>
-                  {activeTab === "heart" && (
-                    <div className="text-sm">
-                      {score <= 3 && (
-                        <p>Baixo risco de eventos cardíacos adversos. Considerar alta sem necessidade de exames adicionais.</p>
-                      )}
-                      {score > 3 && score <= 6 && (
-                        <p>Risco moderado. Recomenda-se observação e possíveis testes não invasivos adicionais.</p>
-                      )}
-                      {score > 6 && (
-                        <p>Alto risco. Recomenda-se internação e avaliação invasiva com possível angiografia coronária.</p>
-                      )}
-                    </div>
-                  )}
+                <div className="grid grid-cols-2 gap-4 mt-8">
+                  <div className="col-span-2 bg-teal-600 text-white p-3 text-center font-medium rounded-md">
+                    {statin === "sim" ? "USANDO ESTATINA" : "SEM TRATAMENTO"}
+                  </div>
                   
-                  {activeTab === "framingham" && (
-                    <div className="text-sm">
-                      {score <= 2 && (
-                        <p>Risco baixo. Manter hábitos saudáveis e avaliação regular.</p>
-                      )}
-                      {score > 2 && score <= 5 && (
-                        <p>Risco moderado. Considerar controle agressivo de fatores de risco e estatinas.</p>
-                      )}
-                      {score > 5 && (
-                        <p>Risco alto. Indicado tratamento intensivo de fatores de risco e medidas preventivas.</p>
-                      )}
-                    </div>
-                  )}
+                  <div className="bg-teal-600 text-white p-3 text-center font-medium rounded-md">
+                    META REDUÇÃO<br />PERCENTUAL (%)
+                  </div>
+                  <div className="bg-teal-600 text-white p-3 text-center font-medium rounded-md">
+                    META LDL-c<br />(mg/dL)
+                  </div>
                   
-                  {activeTab === "chads" && (
-                    <div className="text-sm">
-                      {score === 0 && (
-                        <p>Risco baixo de AVC. Considerar nenhum anticoagulante ou AAS.</p>
-                      )}
-                      {score === 1 && (
-                        <p>Risco baixo-moderado. Considerar anticoagulação oral ou AAS.</p>
-                      )}
-                      {score > 1 && (
-                        <p>Risco moderado a alto. Recomendada anticoagulação oral (ex: varfarina, NOAC).</p>
-                      )}
+                  <div className="bg-yellow-100 p-3 text-center font-bold rounded-md border border-yellow-200">
+                    {risk === "Baixo" && "&gt; 30%"}
+                    {risk === "Moderado" && "&gt; 50%"}
+                    {risk === "Alto" && "&gt; 50%"}
+                    {risk === "Muito Alto" && "&gt; 50%"}
+                    <div className="text-sm font-normal mt-1">
+                      {risk === "Baixo" && "Se LDL-c ≥ 130 mg/dL"}
                     </div>
-                  )}
+                  </div>
+                  
+                  <div className="bg-yellow-100 p-3 text-center font-bold rounded-md border border-yellow-200">
+                    {risk === "Baixo" && "&lt; 130"}
+                    {risk === "Moderado" && "&lt; 100"}
+                    {risk === "Alto" && "&lt; 70"}
+                    {risk === "Muito Alto" && "&lt; 50"}
+                  </div>
                 </div>
                 
-                <Button className="w-full flex items-center justify-center" variant="outline">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Adicionar ao prontuário
-                </Button>
-              </div>
-            ) : (
-              <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
-                <div className="text-center mb-4">
-                  <Activity className="h-12 w-12 mx-auto mb-2 text-muted" />
-                  <p>Preencha os dados necessários e calcule o score</p>
+                <div className="mt-8">
+                  <div className="bg-teal-600 text-white p-3 text-center font-medium rounded-md mb-4">
+                    TRATAMENTO RECOMENDADO
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="border border-teal-200 rounded-md p-3 text-center">
+                      <div className="text-sm text-gray-600 mb-2">(doses diárias em mg)</div>
+                    </div>
+                    
+                    <div className="border border-teal-200 rounded-md p-3">
+                      <div className="space-y-1">
+                        <div>Lovastatina 40</div>
+                        <div>Sinvastatina 20-40</div>
+                        <div>Pravastatina 40-80</div>
+                        <div>Fluvastatina 80</div>
+                        <div>Pitavastatina 2-4</div>
+                        <div>Atorvastatina 10-20</div>
+                        <div>Rosuvastatina 5-10</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                
-                <Button variant="link" className="text-cardio-600 flex items-center" onClick={() => {
-                  document.querySelectorAll(".tabs-list button")[0].scrollIntoView({ behavior: "smooth" });
-                }}>
-                  Ir para formulário
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
               </div>
             )}
+
+            {/* Navigation buttons */}
+            <div className="flex justify-between mt-8">
+              {currentStep > 1 && currentStep <= 5 ? (
+                <Button
+                  variant="outline"
+                  onClick={currentStep === 5 ? resetCalculator : handlePreviousStep}
+                  className="flex items-center"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  {currentStep === 5 ? "VOLTAR AO INÍCIO" : "VOLTAR"}
+                </Button>
+              ) : (
+                <div></div>
+              )}
+
+              {currentStep < 5 && (
+                <Button
+                  onClick={handleNextStep}
+                  className="bg-cardio-600 hover:bg-cardio-700 flex items-center ml-auto"
+                >
+                  {currentStep === 4 ? "CALCULAR" : "PROSSEGUIR"}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Logos Footer */}
+      <div className="flex justify-center items-center space-x-8 py-4 bg-white rounded-lg">
+        <div className="opacity-70">
+          <img src="/lovable-uploads/3ceba0ba-1da5-4f60-9674-99eed74fd71d.png" alt="SBC Logo" className="h-12" />
+        </div>
+        <div className="opacity-70">
+          <img src="/lovable-uploads/38d00615-5e52-447c-bc36-43ab3b347cd1.png" alt="Aterosclerose Logo" className="h-10" />
+        </div>
+        <div className="opacity-70">
+          <img src="/lovable-uploads/be4c173f-607c-440b-ad0b-c1127c648ddf.png" alt="SBEM Logo" className="h-10" />
+        </div>
+        <div className="opacity-70">
+          <img src="/lovable-uploads/65168c35-bf6e-4db9-8290-44ed4c129a77.png" alt="SBD Logo" className="h-10" />
+        </div>
+        <div className="opacity-70">
+          <img src="/lovable-uploads/0e27c807-e73c-4830-bd30-28d7fb0c4361.png" alt="Sponsors" className="h-8" />
+        </div>
       </div>
     </div>
   );
