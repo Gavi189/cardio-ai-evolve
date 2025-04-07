@@ -1,8 +1,9 @@
 
 import { useState } from "react";
-import { Calendar, Clock, CalendarDays, FileText, UserCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, CalendarDays, FileText, UserCircle, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -10,44 +11,65 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface Appointment {
   id: number;
   patient: string;
   time: string;
   avatar: string;
-  type: string;
-  status: "scheduled" | "confirmed" | "canceled" | "completed";
+  description: string;
+  type: "Consulta" | "Retorno" | "Exame";
+  status: "confirmed" | "pending" | "canceled" | "completed";
 }
+
+// Simulated appointments for the month
+const monthAppointments: Record<string, Appointment[]> = {
+  "2025-04-07": [
+    { id: 1, patient: "Maria Silva", time: "09:00", avatar: "MS", description: "Consulta de rotina", type: "Consulta", status: "confirmed" },
+    { id: 2, patient: "João Oliveira", time: "10:30", avatar: "JO", description: "Eletrocardiograma", type: "Exame", status: "confirmed" },
+    { id: 3, patient: "Ana Santos", time: "13:45", avatar: "AS", description: "Retorno", type: "Retorno", status: "pending" },
+    { id: 4, patient: "Carlos Ferreira", time: "15:15", avatar: "CF", description: "Primeira consulta", type: "Consulta", status: "confirmed" },
+  ],
+  "2025-04-10": [
+    { id: 5, patient: "Roberto Almeida", time: "14:30", avatar: "RA", description: "Consulta de rotina", type: "Consulta", status: "confirmed" },
+    { id: 6, patient: "Carla Mendes", time: "16:00", avatar: "CM", description: "Resultado de exames", type: "Retorno", status: "confirmed" },
+  ],
+  "2025-04-15": [
+    { id: 7, patient: "Paulo Souza", time: "08:00", avatar: "PS", description: "Ecocardiograma", type: "Exame", status: "confirmed" },
+    { id: 8, patient: "Lúcia Pereira", time: "11:30", avatar: "LP", description: "Consulta de rotina", type: "Consulta", status: "confirmed" },
+  ],
+  "2025-04-21": [
+    { id: 9, patient: "Fernando Costa", time: "10:00", avatar: "FC", description: "Retorno pós-exames", type: "Retorno", status: "confirmed" },
+  ],
+  "2025-04-24": [
+    { id: 10, patient: "Júlia Rodrigues", time: "13:00", avatar: "JR", description: "Holter 24h", type: "Exame", status: "confirmed" },
+  ],
+};
 
 export default function Schedule() {
   const { toast } = useToast();
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 3, 7)); // April 7, 2025
   const [selectedView, setSelectedView] = useState<string>("day");
   
-  // Dados de exemplo para a agenda
-  const appointments: Appointment[] = [
-    { id: 1, patient: "Maria Silva", time: "09:00", avatar: "MS", type: "Consulta", status: "confirmed" },
-    { id: 2, patient: "João Santos", time: "10:30", avatar: "JS", type: "Retorno", status: "scheduled" },
-    { id: 3, patient: "Ana Oliveira", time: "13:00", avatar: "AO", type: "Exame", status: "confirmed" },
-    { id: 4, patient: "Roberto Almeida", time: "14:30", avatar: "RA", type: "Consulta", status: "scheduled" },
-    { id: 5, patient: "Carla Mendes", time: "16:00", avatar: "CM", type: "Procedimento", status: "scheduled" },
-  ];
+  // Get appointments for the selected day
+  const formattedDate = format(currentDate, "yyyy-MM-dd");
+  const appointments = monthAppointments[formattedDate] || [];
 
-  const moveDate = (days: number) => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + days);
-    setCurrentDate(newDate);
+  // Function to check if a day has appointments (for the calendar)
+  const hasDayAppointment = (day: Date): boolean => {
+    const dateStr = format(day, "yyyy-MM-dd");
+    return !!monthAppointments[dateStr];
   };
 
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('pt-BR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+  // Function to handle date selection in the calendar
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setCurrentDate(date);
+    }
   };
 
   const getStatusClass = (status: Appointment["status"]) => {
@@ -64,6 +86,7 @@ export default function Schedule() {
       case "confirmed": return "Confirmado";
       case "canceled": return "Cancelado";
       case "completed": return "Realizado";
+      case "pending": return "Pendente";
       default: return "Agendado";
     }
   };
@@ -92,75 +115,110 @@ export default function Schedule() {
         </div>
         
         <Button className="bg-cardio-600 hover:bg-cardio-700">
-          <Calendar className="h-4 w-4 mr-2" />
+          <CalendarIcon className="h-4 w-4 mr-2" />
           Nova Consulta
         </Button>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Calendar Card */}
+        <Card>
+          <CardHeader>
             <CardTitle>Calendário</CardTitle>
-            <CardDescription>Visualize e gerencie seu calendário de atendimentos</CardDescription>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" onClick={() => moveDate(-1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium">
-              {formatDate(currentDate)}
-            </span>
-            <Button variant="outline" size="sm" onClick={() => moveDate(1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Select value={selectedView} onValueChange={setSelectedView}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Visualização" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="day">Dia</SelectItem>
-                <SelectItem value="week">Semana</SelectItem>
-                <SelectItem value="month">Mês</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="border rounded-md">
-              <div className="grid grid-cols-12 border-b text-xs font-medium p-2 bg-muted/30">
-                <div className="col-span-1">Horário</div>
-                <div className="col-span-3">Paciente</div>
-                <div className="col-span-2">Tipo</div>
-                <div className="col-span-2">Status</div>
-                <div className="col-span-4 text-right">Ações</div>
-              </div>
-              
-              {appointments.length > 0 ? (
-                <div className="divide-y">
-                  {appointments.map((appointment) => (
-                    <div key={appointment.id} className="grid grid-cols-12 items-center p-3">
-                      <div className="col-span-1 flex items-center">
-                        <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
-                        <span>{appointment.time}</span>
+            <CardDescription>Selecione uma data para ver os agendamentos</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={currentDate}
+                onSelect={handleDateSelect}
+                className="rounded-md border w-full"
+                locale={ptBR}
+                modifiers={{
+                  hasAppointment: (date) => hasDayAppointment(date),
+                }}
+                modifiersClassNames={{
+                  hasAppointment: "bg-cardio-100 text-cardio-700 font-bold",
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Appointments Card */}
+        <Card className="md:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle>
+                Consultas de {format(currentDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              </CardTitle>
+              <CardDescription>
+                {appointments.length} 
+                {appointments.length === 1 ? ' consulta' : ' consultas'}
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={() => {
+                const prevDay = new Date(currentDate);
+                prevDay.setDate(currentDate.getDate() - 1);
+                setCurrentDate(prevDay);
+              }}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                const nextDay = new Date(currentDate);
+                nextDay.setDate(currentDate.getDate() + 1);
+                setCurrentDate(nextDay);
+              }}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Select value={selectedView} onValueChange={setSelectedView}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Visualização" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Dia</SelectItem>
+                  <SelectItem value="week">Semana</SelectItem>
+                  <SelectItem value="month">Mês</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {appointments.length > 0 ? (
+              <div className="space-y-3">
+                {appointments.map((appointment) => (
+                  <div 
+                    key={appointment.id} 
+                    className="border rounded-md p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="bg-cardio-100 h-12 w-12 rounded-full flex items-center justify-center text-cardio-700 font-medium shrink-0">
+                        {appointment.avatar}
                       </div>
-                      <div className="col-span-3 flex items-center">
-                        <div className="bg-cardio-100 h-8 w-8 rounded-full flex items-center justify-center text-cardio-700 font-medium mr-2">
-                          {appointment.avatar}
+                      <div>
+                        <h3 className="font-medium">{appointment.patient}</h3>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Clock className="h-3.5 w-3.5 mr-1" />
+                          {appointment.time} - {appointment.description}
                         </div>
-                        <span>{appointment.patient}</span>
+                        <div className="mt-1">
+                          <Badge variant="outline" className="bg-gray-50">
+                            {appointment.type}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="col-span-2">{appointment.type}</div>
-                      <div className="col-span-2">
-                        <span className={`text-xs px-2 py-1 rounded-full border ${getStatusClass(appointment.status)}`}>
-                          {getStatusText(appointment.status)}
-                        </span>
-                      </div>
-                      <div className="col-span-4 flex justify-end space-x-2">
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-2 md:items-center">
+                      <Badge className={`mr-2 ${getStatusClass(appointment.status)}`}>
+                        {getStatusText(appointment.status)}
+                      </Badge>
+                      <div className="flex gap-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="text-cardio-600"
+                          className="text-cardio-600 min-w-24"
                           onClick={() => confirmAppointment(appointment.id)}
                         >
                           Confirmar
@@ -168,31 +226,32 @@ export default function Schedule() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="text-red-600"
+                          className="text-red-600 min-w-20"
                           onClick={() => cancelAppointment(appointment.id)}
                         >
                           Cancelar
                         </Button>
-                        <Button variant="outline" size="sm">
-                          <FileText className="h-4 w-4" />
+                        <Button variant="outline" size="sm" className="px-2.5">
+                          <Eye className="h-4 w-4" />
+                          <span className="sr-only">Ver</span>
                         </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center text-muted-foreground">
-                  <CalendarDays className="h-12 w-12 mx-auto mb-3 text-muted" />
-                  <p>Nenhuma consulta agendada para hoje</p>
-                  <Button variant="link" className="mt-2 text-cardio-600">
-                    Agendar nova consulta
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-muted-foreground">
+                <CalendarDays className="h-12 w-12 mx-auto mb-3 text-muted" />
+                <p>Nenhuma consulta agendada para esta data</p>
+                <Button variant="link" className="mt-2 text-cardio-600">
+                  Agendar nova consulta
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
@@ -210,18 +269,20 @@ export default function Schedule() {
               {[0, 1, 2].map((dayOffset) => {
                 const date = new Date(currentDate);
                 date.setDate(currentDate.getDate() + dayOffset);
+                const dateStr = format(date, "yyyy-MM-dd");
+                const dayAppointments = monthAppointments[dateStr] || [];
                 
                 return (
                   <Card key={dayOffset} className="border border-border">
                     <CardHeader className="py-3 px-4 bg-muted/20 border-b">
                       <p className="text-sm font-medium">
-                        {date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })}
+                        {format(date, "EEEE, d 'de' MMM", { locale: ptBR })}
                       </p>
                     </CardHeader>
                     <CardContent className="p-0">
                       <div className="divide-y">
-                        {dayOffset === 0 ? (
-                          appointments.slice(0, 3).map((appointment) => (
+                        {dayAppointments.length > 0 ? (
+                          dayAppointments.slice(0, 3).map((appointment) => (
                             <div key={appointment.id} className="p-3 flex justify-between items-center">
                               <div className="flex items-center gap-2">
                                 <div className="bg-cardio-100 h-8 w-8 rounded-full flex items-center justify-center text-cardio-700 font-medium">
@@ -235,9 +296,9 @@ export default function Schedule() {
                                   </div>
                                 </div>
                               </div>
-                              <span className={`text-xs px-2 py-1 rounded-full border ${getStatusClass(appointment.status)}`}>
+                              <Badge className={`text-xs px-2 py-1 rounded-full border ${getStatusClass(appointment.status)}`}>
                                 {getStatusText(appointment.status)}
-                              </span>
+                              </Badge>
                             </div>
                           ))
                         ) : (
