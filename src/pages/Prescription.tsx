@@ -1,10 +1,19 @@
 
 import { useState } from "react";
-import { FileText, Search, Filter, Download, Share2, Plus, Printer, File } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileText, Search, Filter, Download, Share2, Plus, Printer, FilePlus, FileCheck, MedicalSymbol } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -12,30 +21,71 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
 
 interface Prescription {
   id: number;
   patient: string;
   date: string;
-  type: "medication" | "exam" | "certificate";
+  type: "simples" | "especial" | "exame";
   description: string;
   status: "pending" | "delivered" | "expired";
+}
+
+interface PrescriptionTemplate {
+  id: number;
+  title: string;
+  description: string;
+  type: "simples" | "especial" | "exame";
+  icon: React.FC<any>;
 }
 
 export default function Prescription() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [templateDialog, setTemplateDialog] = useState(false);
+  const [prescriptionDialog, setPrescriptionDialog] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<PrescriptionTemplate | null>(null);
+  
+  const templateForm = useForm({
+    defaultValues: {
+      title: "",
+      description: "",
+      type: "simples",
+      content: ""
+    }
+  });
+
+  const prescriptionForm = useForm({
+    defaultValues: {
+      patient: "",
+      type: "simples",
+      description: "",
+      content: ""
+    }
+  });
   
   // Dados de exemplo para receituários
   const prescriptions: Prescription[] = [
-    { id: 1, patient: "Maria Silva", date: "04/04/2023", type: "medication", description: "Losartana 50mg - 30 comprimidos", status: "delivered" },
-    { id: 2, patient: "João Santos", date: "03/04/2023", type: "medication", description: "Atorvastatina 20mg - 30 comprimidos", status: "pending" },
-    { id: 3, patient: "Ana Oliveira", date: "02/04/2023", type: "exam", description: "Solicitação de ecocardiograma", status: "delivered" },
-    { id: 4, patient: "Roberto Almeida", date: "01/04/2023", type: "certificate", description: "Atestado médico - 3 dias", status: "delivered" },
-    { id: 5, patient: "Carla Mendes", date: "28/03/2023", type: "medication", description: "Varfarina 5mg - 30 comprimidos", status: "expired" },
-    { id: 6, patient: "Paulo Sousa", date: "25/03/2023", type: "exam", description: "Solicitação de teste ergométrico", status: "pending" },
+    { id: 1, patient: "Maria Silva", date: "04/04/2023", type: "simples", description: "Losartana 50mg - 30 comprimidos", status: "delivered" },
+    { id: 2, patient: "João Santos", date: "03/04/2023", type: "simples", description: "Atorvastatina 20mg - 30 comprimidos", status: "pending" },
+    { id: 3, patient: "Ana Oliveira", date: "02/04/2023", type: "exame", description: "Solicitação de ecocardiograma", status: "delivered" },
+    { id: 4, patient: "Roberto Almeida", date: "01/04/2023", type: "especial", description: "Fluoxetina 20mg - 30 comprimidos", status: "delivered" },
+    { id: 5, patient: "Carla Mendes", date: "28/03/2023", type: "simples", description: "Varfarina 5mg - 30 comprimidos", status: "expired" },
+    { id: 6, patient: "Paulo Sousa", date: "25/03/2023", type: "exame", description: "Solicitação de teste ergométrico", status: "pending" },
+  ];
+
+  // Templates atualizados conforme solicitado
+  const prescriptionTemplates: PrescriptionTemplate[] = [
+    { id: 1, title: "Dislipidemia leve", description: "Medicamentos e orientações para dislipidemia leve", type: "simples", icon: FileText },
+    { id: 2, title: "Pré-operatório cardiovascular", description: "Exames e medicações para preparo pré-operatório", type: "exame", icon: FileCheck },
+    { id: 3, title: "Insuficiência cardíaca crônica", description: "Tratamento padrão para ICC", type: "simples", icon: FileText },
+    { id: 4, title: "Ansiedade leve/moderada", description: "Tratamento para ansiedade com medicação controlada", type: "especial", icon: MedicalSymbol },
+    { id: 5, title: "Exames cardiológicos básicos", description: "Conjunto de exames cardiológicos de rotina", type: "exame", icon: FileCheck },
   ];
 
   const filteredPrescriptions = prescriptions.filter(prescription => {
@@ -43,9 +93,9 @@ export default function Prescription() {
                           prescription.description.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (activeTab === "all") return matchesSearch;
-    if (activeTab === "medication") return matchesSearch && prescription.type === "medication";
-    if (activeTab === "exam") return matchesSearch && prescription.type === "exam";
-    if (activeTab === "certificate") return matchesSearch && prescription.type === "certificate";
+    if (activeTab === "simples") return matchesSearch && prescription.type === "simples";
+    if (activeTab === "especial") return matchesSearch && prescription.type === "especial";
+    if (activeTab === "exame") return matchesSearch && prescription.type === "exame";
     
     return false;
   });
@@ -68,10 +118,19 @@ export default function Prescription() {
 
   const getTypeText = (type: Prescription["type"]) => {
     switch (type) {
-      case "medication": return "Medicamento";
-      case "exam": return "Exame";
-      case "certificate": return "Atestado";
+      case "simples": return "Receita Simples";
+      case "especial": return "Receituário Especial";
+      case "exame": return "Exames";
       default: return "";
+    }
+  };
+
+  const getTypeIcon = (type: Prescription["type"]) => {
+    switch (type) {
+      case "simples": return <FileText className="h-5 w-5" />;
+      case "especial": return <MedicalSymbol className="h-5 w-5" />;
+      case "exame": return <FileCheck className="h-5 w-5" />;
+      default: return <FileText className="h-5 w-5" />;
     }
   };
 
@@ -96,6 +155,31 @@ export default function Prescription() {
     });
   };
 
+  const onCreateTemplate = (data: any) => {
+    toast({
+      title: "Template criado",
+      description: `O template "${data.title}" foi criado com sucesso.`,
+    });
+    setTemplateDialog(false);
+    templateForm.reset();
+  };
+
+  const onCreatePrescription = (data: any) => {
+    toast({
+      title: "Receituário criado",
+      description: `O receituário para ${data.patient} foi criado com sucesso.`,
+    });
+    setPrescriptionDialog(false);
+    prescriptionForm.reset();
+  };
+
+  const handleUseTemplate = (template: PrescriptionTemplate) => {
+    setSelectedTemplate(template);
+    setPrescriptionDialog(true);
+    prescriptionForm.setValue("type", template.type);
+    prescriptionForm.setValue("description", template.title);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -104,10 +188,101 @@ export default function Prescription() {
           <p className="text-muted-foreground">Gerenciamento de receitas, solicitações e atestados</p>
         </div>
         
-        <Button className="bg-cardio-600 hover:bg-cardio-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Receituário
-        </Button>
+        <Dialog open={prescriptionDialog} onOpenChange={setPrescriptionDialog}>
+          <DialogTrigger asChild>
+            <Button className="bg-cardio-600 hover:bg-cardio-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova prescrição
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Nova prescrição</DialogTitle>
+              <DialogDescription>
+                Crie uma nova prescrição para seu paciente.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Form {...prescriptionForm}>
+              <form onSubmit={prescriptionForm.handleSubmit(onCreatePrescription)} className="space-y-4">
+                <FormField
+                  control={prescriptionForm.control}
+                  name="patient"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Paciente</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome do paciente" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={prescriptionForm.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de receituário</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="simples">Receita Simples</SelectItem>
+                            <SelectItem value="especial">Receituário Especial</SelectItem>
+                            <SelectItem value="exame">Exames</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={prescriptionForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Breve descrição da prescrição" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={prescriptionForm.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Conteúdo da prescrição</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Digite o conteúdo detalhado da prescrição..." 
+                          className="min-h-[200px]"
+                          {...field}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setPrescriptionDialog(false)}>Cancelar</Button>
+                  <Button type="submit">Criar prescrição</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
@@ -123,7 +298,7 @@ export default function Prescription() {
               <div className="relative flex-1 md:w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar receituário..."
+                  placeholder="Buscar paciente ou medicação..."
                   className="pl-8"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -139,9 +314,9 @@ export default function Prescription() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-4 mb-4">
               <TabsTrigger value="all">Todos</TabsTrigger>
-              <TabsTrigger value="medication">Medicamentos</TabsTrigger>
-              <TabsTrigger value="exam">Exames</TabsTrigger>
-              <TabsTrigger value="certificate">Atestados</TabsTrigger>
+              <TabsTrigger value="simples">Receita Simples</TabsTrigger>
+              <TabsTrigger value="especial">Receituário Especial</TabsTrigger>
+              <TabsTrigger value="exame">Exames</TabsTrigger>
             </TabsList>
             
             <TabsContent value={activeTab} className="mt-0">
@@ -163,7 +338,10 @@ export default function Prescription() {
                         <div className="col-span-1 font-medium">#{prescription.id}</div>
                         <div className="col-span-3">{prescription.patient}</div>
                         <div className="col-span-1 text-sm">{prescription.date}</div>
-                        <div className="col-span-1 text-sm">{getTypeText(prescription.type)}</div>
+                        <div className="col-span-1 text-sm flex items-center">
+                          <span className="mr-1">{getTypeIcon(prescription.type)}</span>
+                          <span>{getTypeText(prescription.type).split(' ')[0]}</span>
+                        </div>
                         <div className="col-span-3 text-sm truncate">{prescription.description}</div>
                         <div className="col-span-1">
                           <span className={`text-xs px-2 py-1 rounded-full border ${getStatusClass(prescription.status)}`}>
@@ -196,93 +374,267 @@ export default function Prescription() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <FileText className="h-5 w-5 mr-2 text-cardio-600" />
-              Modelos de Receituário
-            </CardTitle>
-            <CardDescription>
-              Modelos pré-definidos para agilizar a criação de receituários
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                { title: "Anti-hipertensivos", description: "Medicamentos para controle de pressão", icon: File },
-                { title: "Anticoagulantes", description: "Medicamentos para anticoagulação", icon: File },
-                { title: "Exames cardiológicos", description: "Solicitações de exames padrão", icon: File },
-                { title: "Atestado médico", description: "Modelo de atestado médico padrão", icon: File },
-                { title: "Relatório médico", description: "Modelo de relatório detalhado", icon: File },
-                { title: "Kit pós-cirúrgico", description: "Receituário para pacientes pós-cirurgia", icon: File },
-              ].map((template, index) => (
-                <Card key={index} className="hover:shadow-md transition-all cursor-pointer">
-                  <CardContent className="p-4 flex">
-                    <div className="h-10 w-10 mr-3 rounded bg-cardio-100 flex items-center justify-center text-cardio-600">
-                      <template.icon className="h-5 w-5" />
+      <Tabs defaultValue="templates" className="w-full">
+        <TabsList className="w-full max-w-md mb-4">
+          <TabsTrigger value="recentes" className="flex-1">Recentes</TabsTrigger>
+          <TabsTrigger value="medicacoes" className="flex-1">Medicações comuns</TabsTrigger>
+          <TabsTrigger value="templates" className="flex-1">Templates</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="templates">
+          {prescriptionTemplates.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {prescriptionTemplates.map((template) => (
+                <Card key={template.id} className="hover:shadow-md transition-all cursor-pointer" onClick={() => handleUseTemplate(template)}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start mb-4">
+                      <div className="h-10 w-10 mr-3 rounded bg-cardio-100 flex items-center justify-center text-cardio-600">
+                        <template.icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">{template.title}</h4>
+                        <p className="text-xs text-muted-foreground">{template.description}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium">{template.title}</h4>
-                      <p className="text-xs text-muted-foreground">{template.description}</p>
+                    <div className="mt-2 pt-2 border-t text-sm text-muted-foreground flex justify-between items-center">
+                      <span className="flex items-center">
+                        {getTypeIcon(template.type)}
+                        <span className="ml-1">{getTypeText(template.type)}</span>
+                      </span>
+                      <Button variant="ghost" size="sm" className="text-xs">Usar</Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <FileText className="h-5 w-5 mr-2 text-cardio-600" />
-              Resumo
-            </CardTitle>
-            <CardDescription>
-              Estatísticas de uso de receituários
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-muted/30 p-4 rounded-lg text-center">
-                  <p className="text-muted-foreground text-sm">Este mês</p>
-                  <p className="text-3xl font-bold text-cardio-600 mt-1">42</p>
-                </div>
-                <div className="bg-muted/30 p-4 rounded-lg text-center">
-                  <p className="text-muted-foreground text-sm">Pendentes</p>
-                  <p className="text-3xl font-bold text-yellow-600 mt-1">7</p>
-                </div>
-              </div>
-              
-              <div className="border-t pt-4">
-                <h4 className="text-sm font-medium mb-3">Por tipo de receituário</h4>
-                <div className="space-y-2">
-                  {[
-                    { type: "Medicamentos", count: 28, color: "bg-blue-500" },
-                    { type: "Exames", count: 12, color: "bg-green-500" },
-                    { type: "Atestados", count: 5, color: "bg-purple-500" },
-                  ].map((stat, index) => (
-                    <div key={index}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>{stat.type}</span>
-                        <span className="text-muted-foreground">{stat.count}</span>
+              <Dialog open={templateDialog} onOpenChange={setTemplateDialog}>
+                <Card className="hover:shadow-md transition-all flex flex-col items-center justify-center text-center cursor-pointer h-full">
+                  <DialogTrigger asChild>
+                    <CardContent className="p-6 flex flex-col items-center justify-center h-full">
+                      <div className="h-20 w-20 mb-4 rounded-full bg-muted/30 flex items-center justify-center text-muted-foreground">
+                        <Plus className="h-8 w-8" />
                       </div>
-                      <div className="w-full bg-muted/50 rounded-full h-2">
-                        <div 
-                          className={`${stat.color} h-2 rounded-full`} 
-                          style={{ width: `${(stat.count / 45) * 100}%` }}
-                        ></div>
+                      <h3 className="text-lg font-medium mb-1">Criar template</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Crie templates reutilizáveis para agilizar suas prescrições médicas mais comuns
+                      </p>
+                    </CardContent>
+                  </DialogTrigger>
+                </Card>
+
+                <DialogContent className="max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle>Criar novo template</DialogTitle>
+                    <DialogDescription>
+                      Crie um template reutilizável para suas prescrições mais frequentes.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <Form {...templateForm}>
+                    <form onSubmit={templateForm.handleSubmit(onCreateTemplate)} className="space-y-4">
+                      <FormField
+                        control={templateForm.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Título do template</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: Dislipidemia leve" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={templateForm.control}
+                          name="type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tipo de receituário</FormLabel>
+                              <Select 
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o tipo" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="simples">Receita Simples</SelectItem>
+                                  <SelectItem value="especial">Receituário Especial</SelectItem>
+                                  <SelectItem value="exame">Exames</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={templateForm.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Descrição breve</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Breve descrição do template" {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                      
+                      <FormField
+                        control={templateForm.control}
+                        name="content"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Conteúdo do template</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Digite o conteúdo padrão para este tipo de prescrição..." 
+                                className="min-h-[200px]"
+                                {...field}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setTemplateDialog(false)}>Cancelar</Button>
+                        <Button type="submit">Criar template</Button>
+                      </DialogFooter>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          ) : (
+            <Card className="p-8 flex flex-col items-center justify-center text-center">
+              <div className="h-20 w-20 mb-4 rounded-full bg-muted/30 flex items-center justify-center text-muted-foreground">
+                <FileText className="h-8 w-8" />
+              </div>
+              <h3 className="text-lg font-medium mb-1">Templates de prescrição</h3>
+              <p className="text-sm text-muted-foreground max-w-md mb-6">
+                Crie templates reutilizáveis para agilizar suas prescrições médicas mais comuns
+              </p>
+              
+              <Dialog open={templateDialog} onOpenChange={setTemplateDialog}>
+                <DialogTrigger asChild>
+                  <Button className="bg-cardio-600 hover:bg-cardio-700">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar template
+                  </Button>
+                </DialogTrigger>
+                
+                <DialogContent className="max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle>Criar novo template</DialogTitle>
+                    <DialogDescription>
+                      Crie um template reutilizável para suas prescrições mais frequentes.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <Form {...templateForm}>
+                    <form onSubmit={templateForm.handleSubmit(onCreateTemplate)} className="space-y-4">
+                      <FormField
+                        control={templateForm.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Título do template</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: Dislipidemia leve" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={templateForm.control}
+                          name="type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tipo de receituário</FormLabel>
+                              <Select 
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o tipo" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="simples">Receita Simples</SelectItem>
+                                  <SelectItem value="especial">Receituário Especial</SelectItem>
+                                  <SelectItem value="exame">Exames</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={templateForm.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Descrição breve</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Breve descrição do template" {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <FormField
+                        control={templateForm.control}
+                        name="content"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Conteúdo do template</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Digite o conteúdo padrão para este tipo de prescrição..." 
+                                className="min-h-[200px]"
+                                {...field}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setTemplateDialog(false)}>Cancelar</Button>
+                        <Button type="submit">Criar template</Button>
+                      </DialogFooter>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="recentes">
+          <Card className="p-8 text-center">
+            <FileText className="h-12 w-12 mx-auto mb-3 text-muted" />
+            <p className="text-muted-foreground">Nenhuma prescrição recente encontrada</p>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="medicacoes">
+          <Card className="p-8 text-center">
+            <FileText className="h-12 w-12 mx-auto mb-3 text-muted" />
+            <p className="text-muted-foreground">Nenhuma medicação comum configurada</p>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
