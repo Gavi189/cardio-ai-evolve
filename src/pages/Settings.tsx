@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { 
   Cog, User, Bell, Lock, Palette, Monitor, Moon, Sun, Laptop, 
@@ -43,6 +44,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Integration {
   id: string;
@@ -533,7 +535,6 @@ export default function Settings() {
             )}
             
             {activeTab === "appearance" && (
-              
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold">Aparência</h2>
@@ -596,11 +597,10 @@ export default function Settings() {
                     </Button>
                   </div>
                 </div>
-              
+              </div>
             )}
             
             {activeTab === "integrations" && (
-              
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold">Integrações</h2>
@@ -656,11 +656,10 @@ export default function Settings() {
                     </Button>
                   </div>
                 </div>
-              
+              </div>
             )}
             
             {activeTab === "security" && (
-              
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold">Segurança</h2>
@@ -744,7 +743,7 @@ export default function Settings() {
                     </Button>
                   </div>
                 </div>
-              
+              </div>
             )}
             
             {activeTab === "marketing" && (
@@ -863,5 +862,76 @@ export default function Settings() {
       </div>
 
       <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
-        
-        <DialogContent className="sm:max-
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurar Integração</DialogTitle>
+            <DialogDescription>
+              {selectedIntegration?.name && `Configure as opções de integração com ${selectedIntegration.name}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome da configuração</Label>
+              <Input placeholder="Minha integração" />
+            </div>
+            <div className="space-y-2">
+              <Label>Chave de API</Label>
+              <Input placeholder="Digite sua chave de API" />
+            </div>
+            <div className="space-y-2">
+              <Label>URL de callback</Label>
+              <Input placeholder="https://exemplo.com/callback" />
+            </div>
+          </div>
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={() => setConfigDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleConnectIntegration}>Salvar Configuração</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={marketingDialogOpen} onOpenChange={setMarketingDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar Modelo de Marketing</DialogTitle>
+            <DialogDescription>
+              {selectedTemplate?.name && `Editar o modelo "${selectedTemplate.name}"`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome do modelo</Label>
+              <Input placeholder="Nome do modelo" value={selectedTemplate?.name || ''} />
+            </div>
+            <div className="space-y-2">
+              <Label>Framework de marketing</Label>
+              <Select value={marketingFramework} onValueChange={setMarketingFramework}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o framework" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AIDA">AIDA (Atenção, Interesse, Desejo, Ação)</SelectItem>
+                  <SelectItem value="PAS">PAS (Problema, Agitação, Solução)</SelectItem>
+                  <SelectItem value="Story">Storytelling</SelectItem>
+                  <SelectItem value="Custom">Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Conteúdo do modelo</Label>
+              <Textarea 
+                placeholder="Digite o conteúdo do modelo..." 
+                className="min-h-[200px]"
+                value={selectedTemplate?.description || ''}
+              />
+            </div>
+          </div>
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={() => setMarketingDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveTemplate}>Salvar Modelo</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
