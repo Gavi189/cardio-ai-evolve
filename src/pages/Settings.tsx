@@ -2,7 +2,8 @@ import { useState } from "react";
 import { 
   Cog, User, Bell, Lock, Palette, Monitor, Moon, Sun, Laptop, 
   CheckCircle, Save, ChevronRight, LogOut, Link, FlaskConical,
-  Store, Calendar, Code, ExternalLink, BadgeCheck, AlertCircle
+  Store, Calendar, Code, ExternalLink, BadgeCheck, AlertCircle,
+  BarChart, MessageSquare, Mail, Target
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface Integration {
   id: string;
@@ -51,24 +54,38 @@ interface Integration {
   actionType: "connect" | "configure" | "documentation";
 }
 
+interface MarketingTemplate {
+  id: string;
+  name: string;
+  description: string;
+  framework: "AIDA" | "PAS" | "Story" | "Custom";
+  enabled: boolean;
+}
+
 export default function Settings() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
+  const isMobile = useMediaQuery("(max-width: 768px)");
   
   const [theme, setTheme] = useState("system");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
+  const [promotionalEmails, setPromotionalEmails] = useState(false);
   const [language, setLanguage] = useState("pt-BR");
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [marketingDialogOpen, setMarketingDialogOpen] = useState(false);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<MarketingTemplate | null>(null);
+  const [marketingFramework, setMarketingFramework] = useState<string>("AIDA");
 
   const [profile, setProfile] = useState({
     name: "Dr. Rafael Costa",
     email: "dr.rafael@smartcardio.com",
     specialty: "Cardiologia",
     license: "CRM 12345",
-    phone: "(11) 98765-4321"
+    phone: "(11) 98765-4321",
+    biography: "Cardiologista com especialização em arritmias cardíacas e insuficiência cardíaca."
   });
 
   const integrations: Integration[] = [
@@ -128,6 +145,44 @@ export default function Settings() {
     }
   ];
 
+  const marketingTemplates: MarketingTemplate[] = [
+    {
+      id: "aida-checkup",
+      name: "Campanha de Check-up Preventivo",
+      description: "Atenção, Interesse, Desejo, Ação para atrair pacientes para check-up preventivo",
+      framework: "AIDA",
+      enabled: true
+    },
+    {
+      id: "pas-risco",
+      name: "Avaliação de Risco Cardiovascular",
+      description: "Problema, Agitação, Solução para conscientizar sobre riscos cardiovasculares",
+      framework: "PAS",
+      enabled: false
+    },
+    {
+      id: "story-recuperacao",
+      name: "Histórias de Recuperação",
+      description: "Storytelling com casos de sucesso de pacientes recuperados",
+      framework: "Story",
+      enabled: true
+    },
+    {
+      id: "aida-hipertensao",
+      name: "Campanha de Hipertensão",
+      description: "Campanha focada na conscientização e tratamento da hipertensão",
+      framework: "AIDA",
+      enabled: false
+    },
+    {
+      id: "pas-prevencao",
+      name: "Prevenção de Doenças Cardíacas",
+      description: "Problema, Agitação, Solução para prevenção de doenças cardíacas",
+      framework: "PAS",
+      enabled: false
+    }
+  ];
+
   const saveSettings = () => {
     toast({
       title: "Configurações salvas",
@@ -177,6 +232,39 @@ export default function Settings() {
     });
     
     setConfigDialogOpen(false);
+  };
+
+  const handleTemplateAction = (template: MarketingTemplate) => {
+    setSelectedTemplate(template);
+    setMarketingFramework(template.framework);
+    setMarketingDialogOpen(true);
+  };
+
+  const handleSaveTemplate = () => {
+    if (!selectedTemplate) return;
+    
+    toast({
+      title: "Modelo salvo",
+      description: `O modelo "${selectedTemplate.name}" foi salvo com sucesso.`,
+    });
+    
+    setMarketingDialogOpen(false);
+  };
+
+  const toggleTemplateStatus = (templateId: string) => {
+    const updatedTemplates = marketingTemplates.map(template => 
+      template.id === templateId 
+        ? { ...template, enabled: !template.enabled } 
+        : template
+    );
+    
+    const template = marketingTemplates.find(t => t.id === templateId);
+    if (template) {
+      toast({
+        title: template.enabled ? "Modelo desativado" : "Modelo ativado",
+        description: `O modelo "${template.name}" foi ${template.enabled ? "desativado" : "ativado"} com sucesso.`,
+      });
+    }
   };
 
   return (
@@ -233,6 +321,14 @@ export default function Settings() {
                 >
                   <Lock className="mr-2 h-4 w-4" />
                   Segurança
+                </Button>
+                <Button
+                  variant={activeTab === "marketing" ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab("marketing")}
+                >
+                  <Target className="mr-2 h-4 w-4" />
+                  Marketing
                 </Button>
               </div>
               <Separator />
@@ -304,6 +400,20 @@ export default function Settings() {
                     </div>
                   </div>
                   
+                  <div className="space-y-2">
+                    <Label htmlFor="biography">Biografia</Label>
+                    <Textarea 
+                      id="biography" 
+                      value={profile.biography}
+                      onChange={(e) => setProfile({...profile, biography: e.target.value})}
+                      placeholder="Descreva sua especialização, experiência e áreas de interesse"
+                      className="min-h-[120px]"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Sua biografia será exibida em seu perfil público e pode ser vista por pacientes e colegas.
+                    </p>
+                  </div>
+                  
                   <div className="pt-4 flex justify-end">
                     <Button onClick={saveProfile} className="bg-cardio-600 hover:bg-cardio-700">
                       <Save className="mr-2 h-4 w-4" />
@@ -361,6 +471,18 @@ export default function Settings() {
                         disabled={!notificationsEnabled} 
                       />
                     </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>E-mails Promocionais</Label>
+                        <p className="text-sm text-muted-foreground">Receba informações sobre atualizações e novidades do sistema</p>
+                      </div>
+                      <Switch 
+                        checked={promotionalEmails} 
+                        onCheckedChange={setPromotionalEmails}
+                        disabled={!notificationsEnabled} 
+                      />
+                    </div>
                   </div>
                   
                   <Separator />
@@ -411,6 +533,7 @@ export default function Settings() {
             )}
             
             {activeTab === "appearance" && (
+              
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold">Aparência</h2>
@@ -473,10 +596,11 @@ export default function Settings() {
                     </Button>
                   </div>
                 </div>
-              </div>
+              
             )}
             
             {activeTab === "integrations" && (
+              
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold">Integrações</h2>
@@ -532,10 +656,11 @@ export default function Settings() {
                     </Button>
                   </div>
                 </div>
-              </div>
+              
             )}
             
             {activeTab === "security" && (
+              
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold">Segurança</h2>
@@ -619,6 +744,118 @@ export default function Settings() {
                     </Button>
                   </div>
                 </div>
+              
+            )}
+            
+            {activeTab === "marketing" && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold">Marketing Digital</h2>
+                  <p className="text-muted-foreground">Gerencie suas estratégias de marketing e comunicação com pacientes</p>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="rounded-md border p-4 bg-cardio-50">
+                    <div className="flex flex-col">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <h3 className="font-medium flex items-center">
+                            <Mail className="h-5 w-5 mr-2 text-cardio-600" />
+                            Emails Promocionais
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Receba informações sobre atualizações e novidades do sistema
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={promotionalEmails} 
+                          onCheckedChange={setPromotionalEmails}
+                        />
+                      </div>
+                      
+                      {promotionalEmails && (
+                        <div className="mt-4 space-y-3">
+                          <p className="text-sm">
+                            Configure quais tipos de e-mails promocionais você deseja receber:
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {[
+                              "Novos serviços e funcionalidades",
+                              "Dicas de saúde cardiovascular",
+                              "Eventos e webinars médicos",
+                              "Novidades sobre o sistema"
+                            ].map((item, i) => (
+                              <div key={i} className="flex items-center space-x-2">
+                                <Checkbox id={`promo-${i}`} defaultChecked={i < 2} />
+                                <Label htmlFor={`promo-${i}`} className="text-sm font-normal">
+                                  {item}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium flex items-center">
+                      <MessageSquare className="h-5 w-5 mr-2 text-cardio-600" />
+                      Modelos de Comunicação
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Configure modelos de comunicação baseados em frameworks de marketing como AIDA (Atenção, Interesse, Desejo, Ação) 
+                      e PAS (Problema, Agitação, Solução), além de storytelling para engajar seus pacientes.
+                    </p>
+                    
+                    <div className="space-y-3">
+                      {marketingTemplates.map((template) => (
+                        <Card key={template.id} className="overflow-hidden border">
+                          <div className="p-4 flex items-center justify-between">
+                            <div className="flex items-start gap-3">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-medium">{template.name}</h3>
+                                  <Badge variant="outline" className={`${template.framework === 'AIDA' ? 'bg-blue-50 text-blue-700 border-blue-200' : template.framework === 'PAS' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-green-50 text-green-700 border-green-200'} text-xs`}>
+                                    {template.framework}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-muted-foreground">{template.description}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Switch 
+                                checked={template.enabled} 
+                                onCheckedChange={() => toggleTemplateStatus(template.id)}
+                              />
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleTemplateAction(template)}
+                              >
+                                Editar
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                    
+                    <div className="mt-4">
+                      <Button variant="outline" className="w-full">
+                        <BarChart className="mr-2 h-4 w-4" />
+                        Ver Estatísticas de Campanhas
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 flex justify-end">
+                    <Button onClick={saveSettings} className="bg-cardio-600 hover:bg-cardio-700">
+                      <Save className="mr-2 h-4 w-4" />
+                      Salvar Configurações de Marketing
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
@@ -626,147 +863,5 @@ export default function Settings() {
       </div>
 
       <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>Configurar {selectedIntegration?.name}</DialogTitle>
-            <DialogDescription>
-              Configure os parâmetros de integração para {selectedIntegration?.name}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {selectedIntegration?.id === "lab" && (
-              <>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="lab-name" className="text-right">
-                    Laboratório
-                  </Label>
-                  <Select defaultValue="dasa">
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecione um laboratório" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dasa">Dasa</SelectItem>
-                      <SelectItem value="fleury">Fleury</SelectItem>
-                      <SelectItem value="db">DB Diagnósticos</SelectItem>
-                      <SelectItem value="custom">Personalizado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="api-key" className="text-right">
-                    Chave API
-                  </Label>
-                  <Input
-                    id="api-key"
-                    type="password"
-                    className="col-span-3"
-                    defaultValue="••••••••••••••••"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="receive-method" className="text-right">
-                    Recebimento
-                  </Label>
-                  <Select defaultValue="push">
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Método de recebimento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="push">Notificação Push</SelectItem>
-                      <SelectItem value="email">E-mail</SelectItem>
-                      <SelectItem value="pull">Consulta Periódica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">
-                    Notificações
-                  </Label>
-                  <div className="flex items-center space-x-2 col-span-3">
-                    <Switch id="auto-notify" defaultChecked />
-                    <Label htmlFor="auto-notify" className="font-normal">Notificar automaticamente novos resultados</Label>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {selectedIntegration?.id === "portal" && (
-              <>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="portal-url" className="text-right">
-                    URL do Portal
-                  </Label>
-                  <Input
-                    id="portal-url"
-                    className="col-span-3"
-                    defaultValue="https://pacientes.smartcardio.com.br"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">Status</Label>
-                  <div className="col-span-3">
-                    <Select defaultValue="disabled">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Status do portal" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="enabled">Ativado</SelectItem>
-                        <SelectItem value="disabled">Desativado</SelectItem>
-                        <SelectItem value="maintenance">Manutenção</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-start gap-4">
-                  <Label className="text-right pt-2">Permissões</Label>
-                  <div className="space-y-2 col-span-3">
-                    <div className="flex items-center space-x-2">
-                      <Switch id="view-results" defaultChecked />
-                      <Label htmlFor="view-results" className="font-normal">Ver resultados de exames</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="schedule" defaultChecked />
-                      <Label htmlFor="schedule" className="font-normal">Agendar consultas</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="cancel" defaultChecked />
-                      <Label htmlFor="cancel" className="font-normal">Cancelar consultas</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="chat" />
-                      <Label htmlFor="chat" className="font-normal">Chat com a equipe médica</Label>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfigDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleConnectIntegration}>
-              Salvar configurações
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Conectar a {selectedIntegration?.name}</AlertDialogTitle>
-            <AlertDialogDescription>
-              Você será redirecionado para autorizar a conexão com {selectedIntegration?.name}.
-              Esse processo requer que você forneça credenciais de acesso.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction>Continuar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-}
+        
+        <DialogContent className="sm:max-
